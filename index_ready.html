@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Onest:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+body{background:#0f0f0f;color:#f0f0f0;font-family:'Onest';padding:20px;}
+.container{max-width:900px;margin:auto;}
+.header{display:flex;justify-content:space-between;margin-bottom:20px;}
+.day{background:#1a1a1a;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid #2a2a2a;}
+.meal{background:#111;border-radius:12px;padding:10px;margin-top:8px;}
+h2{font-family:'Unbounded';}
+h3{font-family:'Unbounded';font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="header">
+<h2>Дневник питания</h2>
+<div>Цель: 2800 ккал / 150г белка</div>
+</div>
+
+<div id="app"></div>
+
+</div>
+
+<script>
+async function loadData(){
+ const res = await fetch("https://script.google.com/macros/s/AKfycbxzpd5r9TRynYh_piSLmbBUtBsM3bY7hrMW_FRYLudelP69WvZuRgVHc4_31oinmfJkfA/exec");
+ const data = await res.json();
+
+ const app = document.getElementById("app");
+ let days = {};
+
+ data.slice(1).forEach(row=>{
+   const date = row[0];
+   if(!days[date]) days[date] = [];
+   days[date].push(row);
+ });
+
+ Object.keys(days).reverse().forEach(date=>{
+   const dayDiv = document.createElement("div");
+   dayDiv.className = "day";
+
+   let html = `<h3>${date}</h3>`;
+
+   days[date].forEach(r=>{
+     html += `
+     <div class="meal">
+       <div><b>${r[1]}</b></div>
+       <div>${r[2]} ккал | Б ${r[3]} | Ж ${r[4]} | У ${r[5]}</div>
+     </div>`;
+   });
+
+   dayDiv.innerHTML = html;
+   app.appendChild(dayDiv);
+ });
+}
+
+loadData();
+</script>
+
+</body>
+</html>
