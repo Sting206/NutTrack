@@ -107,6 +107,119 @@
   .empty-state { text-align: center; padding: 40px; color: var(--muted); background: var(--card); border-radius: 20px; margin: 20px 0; }
   footer { text-align: center; font-size: 11px; color: #444; border-top: 1px solid var(--border); padding-top: 24px; margin-top: 60px; }
   
+  /* Форма ввода */
+  .input-form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 48px;
+  }
+  .form-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .form-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .form-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .form-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 20px;
+    transition: all 0.2s;
+  }
+  .form-tab.active {
+    background: var(--accent);
+    color: #000;
+  }
+  .form-tab:hover:not(.active) {
+    background: var(--card2);
+    color: var(--text);
+  }
+  .form-panel {
+    display: none;
+  }
+  .form-panel.active {
+    display: block;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .form-group input, .form-group select {
+    width: 100%;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Onest', sans-serif;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .submit-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    font-family: 'Onest', sans-serif;
+  }
+  .submit-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+  .submit-message {
+    margin-top: 12px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .submit-message.success {
+    color: var(--accent);
+  }
+  .submit-message.error {
+    color: var(--danger);
+  }
+  
   /* Стили для перерасхода */
   .summary-val.over {
     color: var(--danger);
@@ -150,6 +263,7 @@
     .goals-header { text-align: left; }
     .weight-cards { flex-direction: column; overflow-x: visible; }
     .weight-day-card { min-width: unset; }
+    .form-row { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -161,7 +275,7 @@
       <div class="goals-header">
         <strong>Цели в день</strong><br>
         🔥 2800 ккал &nbsp;|&nbsp; 💪 160г белка &nbsp;|&nbsp; 🌾 350г углеводов &nbsp;|&nbsp; 🥑 80г жиров &nbsp;|&nbsp; 💧 2.5л воды<br>
-        <span style="color:#555">Цель веса: 70 кг</span>
+        <span style="color:#555">Цель веса: 82 кг</span>
       </div>
       <div class="refresh-status">
         <span id="lastUpdate">Загрузка данных...</span>
@@ -170,18 +284,87 @@
     </div>
   </header>
 
+  <!-- Форма для ручного ввода -->
+  <div class="input-form">
+    <div class="form-title">✏️ Добавить запись</div>
+    <div class="form-tabs">
+      <button class="form-tab active" onclick="switchTab('food')">🍽️ Еда</button>
+      <button class="form-tab" onclick="switchTab('weight')">⚖️ Вес</button>
+      <button class="form-tab" onclick="switchTab('water')">💧 Вода</button>
+    </div>
+    
+    <!-- Форма для еды -->
+    <div id="food-panel" class="form-panel active">
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="date" id="food-date" value="">
+      </div>
+      <div class="form-group">
+        <label>Прием пищи</label>
+        <select id="meal-type">
+          <option value="завтрак">Завтрак</option>
+          <option value="обед">Обед</option>
+          <option value="ужин">Ужин</option>
+          <option value="доп">Перекус</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <input type="text" id="food-desc" placeholder="Овсянка с бананом, курица с рисом...">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Ккал</label><input type="number" id="food-kcal" placeholder="0"></div>
+        <div class="form-group"><label>Белок (г)</label><input type="number" id="food-protein" placeholder="0"></div>
+        <div class="form-group"><label>Углеводы (г)</label><input type="number" id="food-carbs" placeholder="0"></div>
+        <div class="form-group"><label>Жиры (г)</label><input type="number" id="food-fat" placeholder="0"></div>
+      </div>
+      <button class="submit-btn" onclick="submitFood()">➕ Добавить прием пищи</button>
+      <div id="food-message" class="submit-message"></div>
+    </div>
+    
+    <!-- Форма для веса -->
+    <div id="weight-panel" class="form-panel">
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="date" id="weight-date" value="">
+      </div>
+      <div class="form-group">
+        <label>Вес (кг)</label>
+        <input type="number" id="weight-value" step="0.1" placeholder="70.5">
+      </div>
+      <button class="submit-btn" onclick="submitWeight()">⚖️ Записать вес</button>
+      <div id="weight-message" class="submit-message"></div>
+    </div>
+    
+    <!-- Форма для воды -->
+    <div id="water-panel" class="form-panel">
+      <div class="form-group">
+        <label>Дата</label>
+        <input type="date" id="water-date" value="">
+      </div>
+      <div class="form-group">
+        <label>Количество воды (мл)</label>
+        <input type="number" id="water-amount" placeholder="250">
+      </div>
+      <button class="submit-btn" onclick="submitWater()">💧 Добавить воду</button>
+      <div id="water-message" class="submit-message"></div>
+    </div>
+  </div>
+
   <div id="app">
     <div class="loading">📡 Загрузка данных из Google Sheets...</div>
   </div>
 
   <footer id="footer">
-    Цель: 70 кг · Данные из Google Sheets · Обновляется автоматически
+    Цель: 82 кг · Данные из Google Sheets · Обновляется автоматически
   </footer>
 </div>
 
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
 const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
+// URL для отправки данных (нужно развернуть Google Apps Script)
+const WEB_APP_URL = ''; // Сюда вставить URL после развертывания скрипта
 
 const SHEET_FOOD = 'Питание';
 const SHEET_WEIGHT = 'Вес';
@@ -198,6 +381,153 @@ const GOALS = {
 
 let appData = { foods: [], weights: [], water: [] };
 let charts = {};
+
+// Установка даты по умолчанию (сегодня)
+function setDefaultDates() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('food-date').value = today;
+  document.getElementById('weight-date').value = today;
+  document.getElementById('water-date').value = today;
+}
+
+// Переключение табов
+function switchTab(tab) {
+  document.querySelectorAll('.form-tab').forEach((btn, i) => {
+    btn.classList.remove('active');
+  });
+  document.querySelectorAll('.form-panel').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  
+  if (tab === 'food') {
+    document.querySelector('.form-tab:first-child').classList.add('active');
+    document.getElementById('food-panel').classList.add('active');
+  } else if (tab === 'weight') {
+    document.querySelector('.form-tab:nth-child(2)').classList.add('active');
+    document.getElementById('weight-panel').classList.add('active');
+  } else if (tab === 'water') {
+    document.querySelector('.form-tab:nth-child(3)').classList.add('active');
+    document.getElementById('water-panel').classList.add('active');
+  }
+}
+
+// ==================== ОТПРАВКА ДАННЫХ ====================
+async function submitToSheet(endpoint, data) {
+  if (!WEB_APP_URL) {
+    console.warn('WEB_APP_URL не настроен. Данные не будут сохранены.');
+    return { success: false, message: 'URL для сохранения не настроен' };
+  }
+  
+  try {
+    const response = await fetch(WEB_APP_URL + '?action=' + endpoint, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    return { success: true, message: 'Отправлено!' };
+  } catch (error) {
+    console.error('Ошибка отправки:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+async function submitFood() {
+  const date = document.getElementById('food-date').value;
+  const mealType = document.getElementById('meal-type').value;
+  const description = document.getElementById('food-desc').value;
+  const kcal = parseFloat(document.getElementById('food-kcal').value) || 0;
+  const protein = parseFloat(document.getElementById('food-protein').value) || 0;
+  const carbs = parseFloat(document.getElementById('food-carbs').value) || 0;
+  const fat = parseFloat(document.getElementById('food-fat').value) || 0;
+  
+  if (!description) {
+    showMessage('food-message', 'Заполните описание блюда', 'error');
+    return;
+  }
+  
+  const data = { date, mealType, description, kcal, protein, carbs, fat };
+  
+  // Сохраняем локально (для демо)
+  appData.foods.push({
+    date: formatDate(date),
+    mealType: mealType,
+    description: description,
+    kcal: kcal,
+    protein: protein,
+    carbs: carbs,
+    fat: fat
+  });
+  
+  showMessage('food-message', '✅ Добавлено! Обновите страницу для просмотра', 'success');
+  
+  // Очищаем поля
+  document.getElementById('food-desc').value = '';
+  document.getElementById('food-kcal').value = '';
+  document.getElementById('food-protein').value = '';
+  document.getElementById('food-carbs').value = '';
+  document.getElementById('food-fat').value = '';
+  
+  // Отправляем в Google Sheets если настроен URL
+  if (WEB_APP_URL) {
+    await submitToSheet('food', data);
+  }
+}
+
+async function submitWeight() {
+  const date = document.getElementById('weight-date').value;
+  const weight = parseFloat(document.getElementById('weight-value').value);
+  
+  if (!weight || weight <= 0) {
+    showMessage('weight-message', 'Введите корректный вес', 'error');
+    return;
+  }
+  
+  const data = { date, weight };
+  
+  appData.weights.push({ date: formatDate(date), weight: weight });
+  appData.weights.sort((a,b) => a.date.localeCompare(b.date));
+  
+  showMessage('weight-message', '✅ Вес добавлен! Обновите страницу', 'success');
+  document.getElementById('weight-value').value = '';
+  
+  if (WEB_APP_URL) {
+    await submitToSheet('weight', data);
+  }
+}
+
+async function submitWater() {
+  const date = document.getElementById('water-date').value;
+  const amount = parseFloat(document.getElementById('water-amount').value);
+  
+  if (!amount || amount <= 0) {
+    showMessage('water-message', 'Введите количество воды', 'error');
+    return;
+  }
+  
+  const data = { date, amount };
+  
+  appData.water.push({ date: formatDate(date), amount: amount });
+  
+  showMessage('water-message', '✅ Вода добавлена! Обновите страницу', 'success');
+  document.getElementById('water-amount').value = '';
+  
+  if (WEB_APP_URL) {
+    await submitToSheet('water', data);
+  }
+}
+
+function showMessage(elementId, text, type) {
+  const el = document.getElementById(elementId);
+  el.textContent = text;
+  el.className = 'submit-message ' + type;
+  setTimeout(() => {
+    el.textContent = '';
+    el.className = 'submit-message';
+  }, 3000);
+}
 
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadSheetAsCSV(sheetName) {
@@ -355,11 +685,9 @@ function renderUI() {
   if (dates.length === 0 && appData.weights.length === 0) {
     document.getElementById('app').innerHTML = `
       <div class="empty-state">
-        📭 Нет данных. Добавьте данные в Google Sheets.<br><br>
+        📭 Нет данных. Добавьте данные через форму выше или в Google Sheets.<br><br>
         <strong>Структура листа "Питание":</strong><br>
-        Дата | Прием | Описание | ккал | белок | углеводы | жиры<br><br>
-        <strong>Пример:</strong><br>
-        24.03.2025 | завтрак | Овсянка с бананом | 450 | 15 | 70 | 12
+        Дата | Прием | Описание | ккал | белок | углеводы | жиры
       </div>
     `;
     return;
@@ -412,21 +740,18 @@ function renderUI() {
     const day = dailyData[date];
     const waterAmount = waterByDay[date] || 0;
     
-    // Расчет процентов
     const kcalPercent = (day.kcal / GOALS.kcal) * 100;
     const proteinPercent = (day.protein / GOALS.protein) * 100;
     const carbsPercent = (day.carbs / GOALS.carbs) * 100;
     const fatPercent = (day.fat / GOALS.fat) * 100;
     const waterPercent = (waterAmount / GOALS.water) * 100;
     
-    // Ширина полосы: максимум 100% для визуала
     const kcalBarWidth = Math.min(100, kcalPercent);
     const proteinBarWidth = Math.min(100, proteinPercent);
     const carbsBarWidth = Math.min(100, carbsPercent);
     const fatBarWidth = Math.min(100, fatPercent);
     const waterBarWidth = Math.min(100, waterPercent);
     
-    // Определяем перерасход (>120%) и предупреждение (100-120%)
     const kcalOver = day.kcal > GOALS.kcal * 1.2;
     const proteinOver = day.protein > GOALS.protein * 1.2;
     const carbsOver = day.carbs > GOALS.carbs * 1.2;
@@ -437,57 +762,24 @@ function renderUI() {
     const carbsWarning = day.carbs > GOALS.carbs && day.carbs <= GOALS.carbs * 1.2;
     const fatWarning = day.fat > GOALS.fat && day.fat <= GOALS.fat * 1.2;
     
-    // Форматируем процент для отображения
-    const kcalPercentText = kcalPercent.toFixed(0) + '%';
-    const proteinPercentText = proteinPercent.toFixed(0) + '%';
-    const carbsPercentText = carbsPercent.toFixed(0) + '%';
-    const fatPercentText = fatPercent.toFixed(0) + '%';
-    
     daysHtml += `
       <div class="day-block">
         <div class="accordion ${idx === 0 ? 'open' : ''}" id="day-${date.replace(/\./g, '-')}">
           <div class="accordion-header" onclick="toggle('day-${date.replace(/\./g, '-')}')">
             <div class="day-label">${date}</div>
             <div class="accordion-summary">
-              <div class="summary-macro">
-                <div class="summary-val kcal ${kcalOver ? 'over' : (kcalWarning ? 'warning' : '')}">${Math.round(day.kcal)}</div>
-                <div class="summary-label">ккал</div>
-              </div>
-              <div class="summary-macro">
-                <div class="summary-val protein ${proteinOver ? 'over' : (proteinWarning ? 'warning' : '')}">${Math.round(day.protein)}г</div>
-                <div class="summary-label">белок</div>
-              </div>
-              <div class="summary-macro">
-                <div class="summary-val carbs ${carbsOver ? 'over' : (carbsWarning ? 'warning' : '')}">${Math.round(day.carbs)}г</div>
-                <div class="summary-label">углев.</div>
-              </div>
-              <div class="summary-macro">
-                <div class="summary-val fat ${fatOver ? 'over' : (fatWarning ? 'warning' : '')}">${Math.round(day.fat)}г</div>
-                <div class="summary-label">жиры</div>
-              </div>
+              <div class="summary-macro"><div class="summary-val kcal ${kcalOver ? 'over' : (kcalWarning ? 'warning' : '')}">${Math.round(day.kcal)}</div><div class="summary-label">ккал</div></div>
+              <div class="summary-macro"><div class="summary-val protein ${proteinOver ? 'over' : (proteinWarning ? 'warning' : '')}">${Math.round(day.protein)}г</div><div class="summary-label">белок</div></div>
+              <div class="summary-macro"><div class="summary-val carbs ${carbsOver ? 'over' : (carbsWarning ? 'warning' : '')}">${Math.round(day.carbs)}г</div><div class="summary-label">углев.</div></div>
+              <div class="summary-macro"><div class="summary-val fat ${fatOver ? 'over' : (fatWarning ? 'warning' : '')}">${Math.round(day.fat)}г</div><div class="summary-label">жиры</div></div>
               <div class="summary-macro"><div class="summary-val water">${waterAmount}мл</div><div class="summary-label">вода</div></div>
             </div>
             <div class="accordion-bars">
-              <div class="bar-row">
-                <div class="bar-track"><div class="bar-fill kcal" style="width:${kcalBarWidth}%"></div></div>
-                <div class="bar-pct ${kcalOver ? 'over-text' : (kcalWarning ? 'warning-text' : '')}">${kcalPercentText}</div>
-              </div>
-              <div class="bar-row">
-                <div class="bar-track"><div class="bar-fill protein" style="width:${proteinBarWidth}%"></div></div>
-                <div class="bar-pct ${proteinOver ? 'over-text' : (proteinWarning ? 'warning-text' : '')}">${proteinPercentText}</div>
-              </div>
-              <div class="bar-row">
-                <div class="bar-track"><div class="bar-fill carbs" style="width:${carbsBarWidth}%"></div></div>
-                <div class="bar-pct ${carbsOver ? 'over-text' : (carbsWarning ? 'warning-text' : '')}">${carbsPercentText}</div>
-              </div>
-              <div class="bar-row">
-                <div class="bar-track"><div class="bar-fill fat" style="width:${fatBarWidth}%"></div></div>
-                <div class="bar-pct ${fatOver ? 'over-text' : (fatWarning ? 'warning-text' : '')}">${fatPercentText}</div>
-              </div>
-              <div class="bar-row">
-                <div class="bar-track"><div class="bar-fill water" style="width:${waterBarWidth}%"></div></div>
-                <div class="bar-pct">${waterPercent.toFixed(0)}%</div>
-              </div>
+              <div class="bar-row"><div class="bar-track"><div class="bar-fill kcal" style="width:${kcalBarWidth}%"></div></div><div class="bar-pct ${kcalOver ? 'over-text' : (kcalWarning ? 'warning-text' : '')}">${kcalPercent.toFixed(0)}%</div></div>
+              <div class="bar-row"><div class="bar-track"><div class="bar-fill protein" style="width:${proteinBarWidth}%"></div></div><div class="bar-pct ${proteinOver ? 'over-text' : (proteinWarning ? 'warning-text' : '')}">${proteinPercent.toFixed(0)}%</div></div>
+              <div class="bar-row"><div class="bar-track"><div class="bar-fill carbs" style="width:${carbsBarWidth}%"></div></div><div class="bar-pct ${carbsOver ? 'over-text' : (carbsWarning ? 'warning-text' : '')}">${carbsPercent.toFixed(0)}%</div></div>
+              <div class="bar-row"><div class="bar-track"><div class="bar-fill fat" style="width:${fatBarWidth}%"></div></div><div class="bar-pct ${fatOver ? 'over-text' : (fatWarning ? 'warning-text' : '')}">${fatPercent.toFixed(0)}%</div></div>
+              <div class="bar-row"><div class="bar-track"><div class="bar-fill water" style="width:${waterBarWidth}%"></div></div><div class="bar-pct">${waterPercent.toFixed(0)}%</div></div>
             </div>
             <div class="accordion-chevron">▾</div>
           </div>
@@ -530,13 +822,13 @@ function updateCharts() {
         labels: appData.weights.map(w => w.date),
         datasets: [
           { label: 'Вес', data: appData.weights.map(w => w.weight), borderColor: '#c8f55a', backgroundColor: 'rgba(200,245,90,0.07)', pointBackgroundColor: '#c8f55a', pointRadius: 5, tension: 0.3, fill: true },
-          { label: 'Цель 70 кг', data: Array(appData.weights.length).fill(70), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
+          { label: 'Цель 82 кг', data: Array(appData.weights.length).fill(82), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { labels: { color: '#555', font: { size: 11 } } } },
-        scales: { y: { min: 60, max: 75, grid: { color: '#1e1e1e' }, ticks: { color: '#666' } }, x: { grid: { color: '#1e1e1e' }, ticks: { color: '#666' } } }
+        scales: { y: { min: 60, max: 85, grid: { color: '#1e1e1e' }, ticks: { color: '#666' } }, x: { grid: { color: '#1e1e1e' }, ticks: { color: '#666' } } }
       }
     });
   }
@@ -591,8 +883,7 @@ async function loadAllData() {
         ❌ Ошибка загрузки данных: ${error.message}<br><br>
         <strong>Чтобы исправить:</strong><br>
         1. Откройте таблицу: <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}" target="_blank" style="color:var(--accent)">открыть таблицу</a><br>
-        2. Нажмите <strong>Файл → Поделиться → Доступ для всех с ссылкой</strong><br>
-        3. Убедитесь, что есть листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
+        2. Нажмите <strong>Файл → Поделиться → Доступ для всех с ссылкой</strong>
       </div>
     `;
   }
@@ -603,7 +894,8 @@ function toggle(id) {
   if (el) el.classList.toggle('open');
 }
 
-// Запуск загрузки и автообновление каждые 5 минут
+// Инициализация
+setDefaultDates();
 loadAllData();
 setInterval(loadAllData, 300000);
 </script>
