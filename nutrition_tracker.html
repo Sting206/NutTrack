@@ -721,6 +721,18 @@ new Chart(document.getElementById('nutrientsChart'), {
     }
   }
 });
+<script>
+async function loadData() {
+  const res = await fetch("ТВОЙ_API_URL");
+  const data = await res.json();
+
+  console.log(data);
+
+  // тут дальше будем строить дни
+}
+
+loadData();
 </script>
+  
 </body>
 </html>
