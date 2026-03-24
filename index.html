@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Onest:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  /* ========== НОВАЯ ЦВЕТОВАЯ СХЕМА ========== */
   :root {
     /* Основной синий и его вариации */
     --primary: #0A38A1;
@@ -29,7 +28,7 @@
     --accent-b-light: #F58325;
     --accent-b-soft: #F59342;
     
-    /* Фоны и интерфейс (на основе синего) */
+    /* Фоны и интерфейс */
     --bg: #0a0f1a;
     --card: #0f1628;
     --card2: #141e38;
@@ -37,7 +36,7 @@
     --text: #f0f4fc;
     --muted: #8a9bb5;
     
-    /* Специфические цвета для нутриентов */
+    /* Специфические цвета */
     --kcal-color: var(--accent-a);
     --protein-color: var(--accent-b);
     --carbs-color: #5af5c8;
@@ -46,6 +45,7 @@
     
     --warning: #ffaa44;
     --danger: #ff5555;
+    --success: #5af55a;
   }
   
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -60,6 +60,71 @@
   .refresh-status { font-size: 10px; color: var(--muted); margin-top: 8px; text-align: right; }
   .refresh-status button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; border-radius: 20px; font-size: 10px; cursor: pointer; transition: all 0.2s; }
   .refresh-status button:hover { border-color: var(--accent-a); color: var(--accent-a); }
+  
+  /* Окно остатка КБЖУ */
+  .remaining-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  .remaining-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .remaining-items {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .remaining-item {
+    text-align: center;
+    min-width: 80px;
+  }
+  .remaining-value {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .remaining-value.positive { color: var(--success); }
+  .remaining-value.negative { color: var(--danger); }
+  .remaining-value.warning { color: var(--warning); }
+  .remaining-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .remaining-progress {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+  .progress-fill.kcal { background: var(--accent-a); }
+  .progress-fill.protein { background: var(--accent-b); }
+  .progress-fill.carbs { background: var(--carbs-color); }
+  .progress-fill.fat { background: var(--fat-color); }
+  
   .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 48px; }
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; }
   .chart-card.wide { grid-column: 1 / -1; }
@@ -136,7 +201,7 @@
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 24px;
-    margin-bottom: 48px;
+    margin-bottom: 32px;
   }
   .form-title {
     font-family: 'Unbounded', sans-serif;
@@ -287,6 +352,9 @@
     .weight-cards { flex-direction: column; overflow-x: visible; }
     .weight-day-card { min-width: unset; }
     .form-row { grid-template-columns: 1fr; }
+    .remaining-items { gap: 12px; }
+    .remaining-item { min-width: 60px; }
+    .remaining-value { font-size: 18px; }
   }
 </style>
 </head>
@@ -307,6 +375,33 @@
     </div>
   </header>
 
+  <!-- Окно остатка КБЖУ на сегодня -->
+  <div id="remaining-panel" class="remaining-card" style="display: none;">
+    <div class="remaining-title">📊 Осталось на сегодня</div>
+    <div class="remaining-items">
+      <div class="remaining-item">
+        <div class="remaining-value" id="remaining-kcal">0</div>
+        <div class="remaining-label">ккал</div>
+      </div>
+      <div class="remaining-item">
+        <div class="remaining-value" id="remaining-protein">0</div>
+        <div class="remaining-label">белок (г)</div>
+      </div>
+      <div class="remaining-item">
+        <div class="remaining-value" id="remaining-carbs">0</div>
+        <div class="remaining-label">углеводы (г)</div>
+      </div>
+      <div class="remaining-item">
+        <div class="remaining-value" id="remaining-fat">0</div>
+        <div class="remaining-label">жиры (г)</div>
+      </div>
+      <div class="remaining-item">
+        <div class="remaining-value" id="remaining-water">0</div>
+        <div class="remaining-label">вода (мл)</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Форма для ручного ввода -->
   <div class="input-form">
     <div class="form-title">✏️ Добавить запись</div>
@@ -322,9 +417,9 @@
       <div class="form-group"><label>Описание</label><input type="text" id="food-desc" placeholder="Овсянка с бананом..."></div>
       <div class="form-row">
         <div class="form-group"><label>Ккал</label><input type="number" id="food-kcal" placeholder="0"></div>
-        <div class="form-group"><label>Белок (г)</label><input type="number" id="food-protein" placeholder="0"></div>
-        <div class="form-group"><label>Углеводы (г)</label><input type="number" id="food-carbs" placeholder="0"></div>
-        <div class="form-group"><label>Жиры (г)</label><input type="number" id="food-fat" placeholder="0"></div>
+        <div class="form-group"><label>Белок (г)</label><input type="number" id="food-protein" placeholder="0" step="0.1"></div>
+        <div class="form-group"><label>Углеводы (г)</label><input type="number" id="food-carbs" placeholder="0" step="0.1"></div>
+        <div class="form-group"><label>Жиры (г)</label><input type="number" id="food-fat" placeholder="0" step="0.1"></div>
       </div>
       <button class="submit-btn" onclick="submitFood()">➕ Добавить прием пищи</button>
       <div id="food-message" class="submit-message"></div>
@@ -352,7 +447,7 @@
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
 const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzcWHP5LLFcgItoNbKtSjG3axHudaSiX0zgRqXqGJLGJhCBnZ8przYTHaLZWPc3_7zuOA/exec'; // Сюда вставить URL веб-приложения Google Apps Script для сохранения
+const WEB_APP_URL = ''; // Сюда вставить URL веб-приложения Google Apps Script для сохранения
 
 const SHEET_FOOD = 'Питание';
 const SHEET_WEIGHT = 'Вес';
@@ -362,6 +457,44 @@ const GOALS = { kcal: 2800, protein: 160, carbs: 350, fat: 80, water: 2500 };
 
 let appData = { foods: [], weights: [], water: [] };
 let charts = {};
+
+// Получить сегодняшнюю дату в формате DD.MM
+function getTodayFormatted() {
+  const today = new Date();
+  return `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+// Обновить окно остатка КБЖУ
+function updateRemainingPanel() {
+  const todayStr = getTodayFormatted();
+  const dailyData = aggregateByDay(appData.foods);
+  const waterByDay = getWaterByDay(appData.water);
+  
+  const today = dailyData[todayStr] || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const todayWater = waterByDay[todayStr] || 0;
+  
+  const remaining = {
+    kcal: GOALS.kcal - today.kcal,
+    protein: GOALS.protein - today.protein,
+    carbs: GOALS.carbs - today.carbs,
+    fat: GOALS.fat - today.fat,
+    water: GOALS.water - todayWater
+  };
+  
+  const panel = document.getElementById('remaining-panel');
+  if (panel) {
+    panel.style.display = 'block';
+    
+    for (const [key, value] of Object.entries(remaining)) {
+      const el = document.getElementById(`remaining-${key}`);
+      if (el) {
+        const rounded = Math.round(value * 10) / 10;
+        el.textContent = rounded >= 0 ? rounded : `-${Math.abs(rounded)}`;
+        el.className = 'remaining-value ' + (rounded >= 0 ? (rounded < 50 ? 'warning' : 'positive') : 'negative');
+      }
+    }
+  }
+}
 
 function setDefaultDates() {
   const today = new Date().toISOString().split('T')[0];
@@ -411,6 +544,8 @@ function submitFood() {
   document.getElementById('food-desc').value = '';
   ['food-kcal', 'food-protein', 'food-carbs', 'food-fat'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   submitToSheet('food', { date, mealType, description, kcal, protein, carbs, fat });
+  renderUI();
+  updateRemainingPanel();
 }
 
 function submitWeight() {
@@ -422,6 +557,7 @@ function submitWeight() {
   showMessage('weight-message', '✅ Вес добавлен! Обновите страницу', 'success');
   document.getElementById('weight-value').value = '';
   submitToSheet('weight', { date, weight });
+  renderUI();
 }
 
 function submitWater() {
@@ -432,6 +568,8 @@ function submitWater() {
   showMessage('water-message', '✅ Вода добавлена! Обновите страницу', 'success');
   document.getElementById('water-amount').value = '';
   submitToSheet('water', { date, amount });
+  renderUI();
+  updateRemainingPanel();
 }
 
 async function loadSheetAsCSV(sheetName) {
@@ -552,10 +690,11 @@ function renderUI() {
   
   if (dates.length === 0 && appData.weights.length === 0) {
     document.getElementById('app').innerHTML = `<div class="empty-state">📭 Нет данных. Добавьте данные через форму выше или в Google Sheets.</div>`;
+    updateRemainingPanel();
     return;
   }
   
-  let chartsHtml = `<div class="charts-grid"><div class="chart-card wide"><div class="chart-title">📈 Динамика веса <span>кг</span></div><div class="chart-wrap tall"><canvas id="weightChart"></canvas></div><div class="weight-cards" style="margin-top:16px; display:flex; gap:12px; overflow-x:auto">${appData.weights.slice().reverse().slice(0,7).map(w => `<div class="weight-day-card"><div class="weight-date">${w.date}</div><div class="weight-row"><div class="weight-label">⚖️ Вес</div><div class="weight-val">${w.weight} кг</div></div></div>`).join('')}</div></div><div class="chart-card wide"><div class="chart-title">📊 Нутриенты по дням</div><div class="chart-wrap" style="height:220px"><canvas id="nutrientsChart"></canvas></div></div></div>`;
+  let chartsHtml = `<div class="charts-grid"><div class="chart-card wide"><div class="chart-title">📈 Динамика веса <span>кг</span></div><div class="chart-wrap tall"><canvas id="weightChart"></canvas></div><div class="weight-cards" style="margin-top:16px; display:flex; gap:12px; overflow-x:auto">${appData.weights.slice().reverse().slice(0,7).map(w => `<div class="weight-day-card"><div class="weight-date">${w.date}</div><div class="weight-row"><div class="weight-label">⚖️ Вес</div><div class="weight-val">${w.weight.toFixed(1)} кг</div></div></div>`).join('')}</div></div><div class="chart-card wide"><div class="chart-title">📊 Нутриенты по дням</div><div class="chart-wrap" style="height:220px"><canvas id="nutrientsChart"></canvas></div></div></div>`;
   
   const last7Days = dates.slice(0,7);
   const avgWater = last7Days.reduce((s,d) => s + (waterByDay[d]||0), 0) / (last7Days.length||1);
@@ -576,6 +715,7 @@ function renderUI() {
   document.getElementById('app').innerHTML = chartsHtml + daysHtml;
   updateCharts();
   document.getElementById('lastUpdate').innerHTML = `📅 Обновлено: ${new Date().toLocaleTimeString()}`;
+  updateRemainingPanel();
 }
 
 function updateCharts() {
