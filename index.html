@@ -125,8 +125,8 @@
     <div>
       <div class="goals-header">
         <strong>Цели в день</strong><br>
-        🔥 2500 ккал &nbsp;|&nbsp; 💪 140г белка &nbsp;|&nbsp; 🌾 320г углеводов &nbsp;|&nbsp; 💧 2.5л воды<br>
-        <span style="color:#555">Цель веса: 70 кг · Старт: ~62.5 кг</span>
+        🔥 2800 ккал &nbsp;|&nbsp; 💪 160г белка &nbsp;|&nbsp; 🌾 350г углеводов &nbsp;|&nbsp; 💧 2.5л воды<br>
+        <span style="color:#555">Цель веса: 70 кг</span>
       </div>
       <div class="refresh-status">
         <span id="lastUpdate">Загрузка данных...</span>
@@ -146,50 +146,46 @@
 
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
-// 👇 ВСТАВЬТЕ СВОЙ ID ТАБЛИЦЫ И API КЛЮЧ
-const SHEET_ID = 'https://docs.google.com/spreadsheets/d/1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w/edit?usp=sharing';  // из URL: https://docs.google.com/spreadsheets/d/ЭТОТ_ID/edit
-const API_KEY = 'AIzaSyA35jipfvXebovi2hDMkk_AGaraPMbCKbw';      // из Google Cloud Console
+// ПРАВИЛЬНЫЙ ID таблицы (только то, что между /d/ и /edit)
+const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
+// ⚠️ ВАЖНО: API ключ нужно создать в Google Cloud Console!
+// Как создать: https://console.cloud.google.com/ → создать проект → включить Sheets API → создать API ключ
+const API_KEY = 'AIzaSyA35jipfvXebovi2hDMkk_AGaraPMbCKbw';  // ⚠️ ЗАМЕНИТЕ НА РЕАЛЬНЫЙ КЛЮЧ!
 
-// Названия листов
-const SHEET_FOOD = 'Питание';      // Лист с приемами пищи
-const SHEET_WEIGHT = 'Вес';         // Лист с весом (дата, вес)
-const SHEET_WATER = 'Вода';         // Лист с водой (дата, количество_мл)
+// Названия листов (должны совпадать с названиями в вашей таблице)
+const SHEET_FOOD = 'Питание';
+const SHEET_WEIGHT = 'Вес';
+const SHEET_WATER = 'Вода';
 
 // Цели
 const GOALS = {
   kcal: 2800,
   protein: 160,
   carbs: 350,
-  water: 2500  // мл
+  water: 2500
 };
 
-// Глобальные данные
-let appData = {
-  foods: [],      // { date, mealType, description, kcal, protein, carbs }
-  weights: [],    // { date, weight }
-  water: []       // { date, amount }
-};
-
+let appData = { foods: [], weights: [], water: [] };
 let charts = {};
 
-// ==================== ЗАГРУЗКА ДАННЫХ ИЗ GOOGLE SHEETS ====================
+// ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadSheetData(sheetName, range = 'A:Z') {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}`;
+  console.log(`Загрузка ${sheetName}...`);
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Ошибка загрузки ${sheetName}: ${response.status}`);
+    throw new Error(`${sheetName}: ${response.status} ${response.statusText}`);
   }
   const data = await response.json();
   return data.values || [];
 }
 
-// Парсинг данных питания
 function parseFoodData(rows) {
   if (!rows || rows.length < 2) return [];
   const headers = rows[0].map(h => h.toLowerCase().trim());
   const dateIdx = headers.findIndex(h => h.includes('дата') || h === 'date');
-  const mealIdx = headers.findIndex(h => h.includes('прием') || h.includes('meal'));
-  const descIdx = headers.findIndex(h => h.includes('описание') || h.includes('desc') || h.includes('блюдо'));
+  const mealIdx = headers.findIndex(h => h.includes('прием') || h.includes('meal') || h.includes('тип'));
+  const descIdx = headers.findIndex(h => h.includes('описание') || h.includes('блюдо') || h.includes('продукт'));
   const kcalIdx = headers.findIndex(h => h === 'ккал');
   const proteinIdx = headers.findIndex(h => h === 'белок');
   const carbsIdx = headers.findIndex(h => h === 'углеводы');
@@ -197,12 +193,12 @@ function parseFoodData(rows) {
   const foods = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    if (!row[dateIdx]) continue;
+    if (!row[dateIdx] || row[dateIdx].trim() === '') continue;
     
     foods.push({
       date: formatDate(row[dateIdx]),
-      mealType: row[mealIdx] || 'доп',
-      description: row[descIdx] || '',
+      mealType: row[mealIdx] ? row[mealIdx].toLowerCase() : 'доп',
+      description: row[descIdx] || '—',
       kcal: parseFloat(row[kcalIdx]) || 0,
       protein: parseFloat(row[proteinIdx]) || 0,
       carbs: parseFloat(row[carbsIdx]) || 0
@@ -211,7 +207,6 @@ function parseFoodData(rows) {
   return foods;
 }
 
-// Парсинг веса
 function parseWeightData(rows) {
   if (!rows || rows.length < 2) return [];
   const headers = rows[0].map(h => h.toLowerCase().trim());
@@ -222,15 +217,17 @@ function parseWeightData(rows) {
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row[dateIdx]) continue;
-    weights.push({
-      date: formatDate(row[dateIdx]),
-      weight: parseFloat(row[weightIdx]) || 0
-    });
+    const weight = parseFloat(row[weightIdx]);
+    if (!isNaN(weight) && weight > 0) {
+      weights.push({
+        date: formatDate(row[dateIdx]),
+        weight: weight
+      });
+    }
   }
   return weights.sort((a,b) => a.date.localeCompare(b.date));
 }
 
-// Парсинг воды
 function parseWaterData(rows) {
   if (!rows || rows.length < 2) return [];
   const headers = rows[0].map(h => h.toLowerCase().trim());
@@ -241,31 +238,30 @@ function parseWaterData(rows) {
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row[dateIdx]) continue;
-    water.push({
-      date: formatDate(row[dateIdx]),
-      amount: parseFloat(row[amountIdx]) || 0
-    });
+    const amount = parseFloat(row[amountIdx]);
+    if (!isNaN(amount) && amount > 0) {
+      water.push({
+        date: formatDate(row[dateIdx]),
+        amount: amount
+      });
+    }
   }
   return water;
 }
 
-// Форматирование даты в DD.MM
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  // Поддержка разных форматов
   let d = new Date(dateStr);
-  if (isNaN(d.getTime())) {
-    // пробуем парсить DD.MM.YYYY
-    const parts = dateStr.split(/[.\/]/);
-    if (parts.length >= 2) {
-      return `${parts[0].padStart(2,'0')}.${parts[1].padStart(2,'0')}`;
-    }
-    return dateStr;
+  if (!isNaN(d.getTime())) {
+    return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`;
   }
-  return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`;
+  const parts = dateStr.split(/[.\/]/);
+  if (parts.length >= 2) {
+    return `${parts[0].padStart(2,'0')}.${parts[1].padStart(2,'0')}`;
+  }
+  return dateStr;
 }
 
-// Агрегация данных по дням
 function aggregateByDay(foods) {
   const daily = {};
   foods.forEach(f => {
@@ -277,16 +273,9 @@ function aggregateByDay(foods) {
     daily[f.date].carbs += f.carbs;
     daily[f.date].meals.push(f);
   });
-  
-  // Сортируем приемы пищи по времени (если есть поле time, иначе оставляем как есть)
-  for (let date in daily) {
-    daily[date].meals.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
-  }
-  
   return daily;
 }
 
-// Получить воду по дням
 function getWaterByDay(waterData) {
   const waterByDay = {};
   waterData.forEach(w => {
@@ -295,23 +284,24 @@ function getWaterByDay(waterData) {
   return waterByDay;
 }
 
-// ==================== ОТРИСОВКА UI ====================
 function renderUI() {
   const dailyData = aggregateByDay(appData.foods);
   const waterByDay = getWaterByDay(appData.water);
-  const dates = Object.keys(dailyData).sort().reverse(); // новые сверху
+  const dates = Object.keys(dailyData).sort().reverse();
   
   if (dates.length === 0 && appData.weights.length === 0) {
     document.getElementById('app').innerHTML = `
       <div class="empty-state">
         📭 Нет данных. Добавьте данные в Google Sheets.<br>
-        Листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
+        Листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"<br><br>
+        <strong>Пример структуры листа "Питание":</strong><br>
+        Дата | Прием | Описание | ккал | белок | углеводы<br>
+        24.03.2025 | завтрак | Овсянка с бананом | 450 | 15 | 70
       </div>
     `;
     return;
   }
   
-  // Строим HTML
   let chartsHtml = `
     <div class="charts-grid">
       <div class="chart-card wide">
@@ -327,13 +317,12 @@ function renderUI() {
         </div>
       </div>
       <div class="chart-card wide">
-        <div class="chart-title">📊 Нутриенты по дням <span>ккал · белок · углеводы</span></div>
+        <div class="chart-title">📊 Нутриенты по дням</div>
         <div class="chart-wrap" style="height:220px"><canvas id="nutrientsChart"></canvas></div>
       </div>
     </div>
   `;
   
-  // Блок с водой
   const last7Days = dates.slice(0,7);
   const avgWater = last7Days.reduce((sum, d) => sum + (waterByDay[d] || 0), 0) / (last7Days.length || 1);
   const todayWater = waterByDay[dates[0]] || 0;
@@ -355,7 +344,6 @@ function renderUI() {
     </div>
   `;
   
-  // Аккордеоны с днями
   let daysHtml = '';
   dates.forEach((date, idx) => {
     const day = dailyData[date];
@@ -365,19 +353,15 @@ function renderUI() {
     const carbsPercent = Math.min(100, (day.carbs / GOALS.carbs) * 100);
     const waterPercent = Math.min(100, (waterAmount / GOALS.water) * 100);
     
-    const isOverKcal = day.kcal > GOALS.kcal;
-    const isOverProtein = day.protein > GOALS.protein;
-    const isOverCarbs = day.carbs > GOALS.carbs;
-    
     daysHtml += `
-      <div class="day-block" style="animation-delay:${idx * 0.03}s">
+      <div class="day-block">
         <div class="accordion ${idx === 0 ? 'open' : ''}" id="day-${date.replace(/\./g, '-')}">
           <div class="accordion-header" onclick="toggle('day-${date.replace(/\./g, '-')}')">
             <div class="day-label">${date}</div>
             <div class="accordion-summary">
-              <div class="summary-macro"><div class="summary-val kcal ${isOverKcal ? 'over' : ''}">${Math.round(day.kcal)}</div><div class="summary-label">ккал</div></div>
-              <div class="summary-macro"><div class="summary-val protein ${isOverProtein ? 'over' : ''}">${Math.round(day.protein)}г</div><div class="summary-label">белок</div></div>
-              <div class="summary-macro"><div class="summary-val carbs ${isOverCarbs ? 'over' : ''}">${Math.round(day.carbs)}г</div><div class="summary-label">углев.</div></div>
+              <div class="summary-macro"><div class="summary-val kcal">${Math.round(day.kcal)}</div><div class="summary-label">ккал</div></div>
+              <div class="summary-macro"><div class="summary-val protein">${Math.round(day.protein)}г</div><div class="summary-label">белок</div></div>
+              <div class="summary-macro"><div class="summary-val carbs">${Math.round(day.carbs)}г</div><div class="summary-label">углев.</div></div>
               <div class="summary-macro"><div class="summary-val water">${waterAmount}мл</div><div class="summary-label">вода</div></div>
             </div>
             <div class="accordion-bars">
@@ -392,8 +376,8 @@ function renderUI() {
             <div class="accordion-inner">
               ${day.meals.map(meal => `
                 <div class="meal-card">
-                  <div class="meal-type ${meal.mealType}">${meal.mealType}</div>
-                  <div class="meal-desc"><strong>${meal.description || '—'}</strong></div>
+                  <div class="meal-type">${meal.mealType}</div>
+                  <div class="meal-desc"><strong>${meal.description}</strong></div>
                   <div class="meal-macros">
                     <div class="macro"><div class="macro-val kcal">${Math.round(meal.kcal)}</div><div class="macro-label">ккал</div></div>
                     <div class="macro"><div class="macro-val protein">${Math.round(meal.protein)}г</div><div class="macro-label">белок</div></div>
@@ -401,7 +385,6 @@ function renderUI() {
                   </div>
                 </div>
               `).join('')}
-              ${waterAmount > 0 ? `<div class="meal-card"><div class="meal-type">💧 Вода</div><div class="meal-desc">Выпито ${waterAmount} мл воды</div><div class="meal-macros"></div></div>` : ''}
             </div>
           </div>
         </div>
@@ -410,8 +393,6 @@ function renderUI() {
   });
   
   document.getElementById('app').innerHTML = chartsHtml + daysHtml;
-  
-  // Обновляем графики
   updateCharts();
   document.getElementById('lastUpdate').innerHTML = `📅 Обновлено: ${new Date().toLocaleTimeString()}`;
 }
@@ -420,46 +401,37 @@ function updateCharts() {
   const dailyData = aggregateByDay(appData.foods);
   const dates = Object.keys(dailyData).sort();
   
-  if (dates.length === 0) return;
-  
-  // Вес график
   if (charts.weight) charts.weight.destroy();
   const weightCtx = document.getElementById('weightChart')?.getContext('2d');
   if (weightCtx && appData.weights.length) {
-    const weightDates = appData.weights.map(w => w.date);
-    const weightValues = appData.weights.map(w => w.weight);
     charts.weight = new Chart(weightCtx, {
       type: 'line',
       data: {
-        labels: weightDates,
+        labels: appData.weights.map(w => w.date),
         datasets: [
-          { label: 'Вес', data: weightValues, borderColor: '#c8f55a', backgroundColor: 'rgba(200,245,90,0.07)', pointBackgroundColor: '#c8f55a', pointRadius: 5, tension: 0.3, fill: true },
-          { label: 'Цель 70 кг', data: Array(weightDates.length).fill(70), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
+          { label: 'Вес', data: appData.weights.map(w => w.weight), borderColor: '#c8f55a', backgroundColor: 'rgba(200,245,90,0.07)', pointBackgroundColor: '#c8f55a', pointRadius: 5, tension: 0.3, fill: true },
+          { label: 'Цель 70 кг', data: Array(appData.weights.length).fill(70), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { labels: { color: '#555', font: { size: 11 } } } },
-        scales: { y: { min: 60, max: 72, grid: { color: '#1e1e1e' }, ticks: { color: '#666' } }, x: { grid: { color: '#1e1e1e' }, ticks: { color: '#666' } } }
+        scales: { y: { min: 60, max: 75, grid: { color: '#1e1e1e' }, ticks: { color: '#666' } }, x: { grid: { color: '#1e1e1e' }, ticks: { color: '#666' } } }
       }
     });
   }
   
-  // Нутриенты график
   if (charts.nutrients) charts.nutrients.destroy();
   const nutrientsCtx = document.getElementById('nutrientsChart')?.getContext('2d');
-  if (nutrientsCtx) {
-    const kcalData = dates.map(d => dailyData[d].kcal);
-    const proteinData = dates.map(d => dailyData[d].protein);
-    const carbsData = dates.map(d => dailyData[d].carbs);
+  if (nutrientsCtx && dates.length) {
     charts.nutrients = new Chart(nutrientsCtx, {
       type: 'bar',
       data: {
         labels: dates,
         datasets: [
-          { label: 'Ккал', data: kcalData, backgroundColor: 'rgba(245,166,35,0.85)', borderColor: '#f5a623', borderRadius: 6, yAxisID: 'yKcal' },
-          { label: 'Белок г', data: proteinData, backgroundColor: 'rgba(200,245,90,0.85)', borderColor: '#c8f55a', borderRadius: 6, yAxisID: 'yGrams' },
-          { label: 'Углеводы г', data: carbsData, backgroundColor: 'rgba(90,245,200,0.85)', borderColor: '#5af5c8', borderRadius: 6, yAxisID: 'yGrams' }
+          { label: 'Ккал', data: dates.map(d => dailyData[d].kcal), backgroundColor: 'rgba(245,166,35,0.85)', borderColor: '#f5a623', borderRadius: 6, yAxisID: 'yKcal' },
+          { label: 'Белок г', data: dates.map(d => dailyData[d].protein), backgroundColor: 'rgba(200,245,90,0.85)', borderColor: '#c8f55a', borderRadius: 6, yAxisID: 'yGrams' },
+          { label: 'Углеводы г', data: dates.map(d => dailyData[d].carbs), backgroundColor: 'rgba(90,245,200,0.85)', borderColor: '#5af5c8', borderRadius: 6, yAxisID: 'yGrams' }
         ]
       },
       options: {
@@ -475,12 +447,10 @@ function updateCharts() {
   }
 }
 
-// ==================== ОСНОВНАЯ ЗАГРУЗКА ====================
 async function loadAllData() {
   document.getElementById('app').innerHTML = '<div class="loading">📡 Загрузка данных из Google Sheets...</div>';
   
   try {
-    // Параллельная загрузка всех листов
     const [foodRows, weightRows, waterRows] = await Promise.all([
       loadSheetData(SHEET_FOOD),
       loadSheetData(SHEET_WEIGHT),
@@ -491,19 +461,19 @@ async function loadAllData() {
     appData.weights = parseWeightData(weightRows);
     appData.water = parseWaterData(waterRows);
     
-    console.log(`Загружено: ${appData.foods.length} записей о еде, ${appData.weights.length} записей веса, ${appData.water.length} записей воды`);
-    
+    console.log(`✅ Загружено: еда=${appData.foods.length}, вес=${appData.weights.length}, вода=${appData.water.length}`);
     renderUI();
   } catch (error) {
-    console.error('Ошибка загрузки:', error);
+    console.error('❌ Ошибка:', error);
     document.getElementById('app').innerHTML = `
       <div class="empty-state">
         ❌ Ошибка загрузки данных: ${error.message}<br><br>
         <strong>Проверьте:</strong><br>
-        1. ID таблицы и API ключ в коде<br>
-        2. Таблица опубликована (Файл → Поделиться → Доступ для всех с ссылкой)<br>
-        3. Включено API Google Sheets<br>
-        4. Названия листов: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
+        1. ID таблицы: ${SHEET_ID}<br>
+        2. API ключ: ${API_KEY !== 'ВАШ_API_КЛЮЧ' ? '✅ установлен' : '❌ не установлен'}<br>
+        3. Таблица опубликована (Файл → Поделиться → Доступ для всех)<br>
+        4. Включено API Google Sheets<br>
+        5. Названия листов: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
       </div>
     `;
   }
@@ -514,12 +484,8 @@ function toggle(id) {
   if (el) el.classList.toggle('open');
 }
 
-// Запуск
 loadAllData();
+setInterval(loadAllData, 300000);
 </script>
-  // Добавьте в конец файла:
-setInterval(loadAllData, 300000); // каждые 5 минут
-
 </body>
-  
 </html>
