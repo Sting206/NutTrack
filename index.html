@@ -161,7 +161,7 @@
     <div class="weight-stats" id="weight-stats"></div>
     <div class="chart-card"><div class="chart-title">📈 Динамика веса</div><div class="chart-wrap" style="height:250px"><canvas id="weightChart"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">📏 Динамика замеров тела</div><div class="chart-wrap" style="height:300px"><canvas id="measuresChart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (включая вес)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody><tr><td>Загрузка...</td></tr></tbody></table></div></div>
+    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева новые даты → справа старые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody><tr><td>Загрузка...</td></tr></tbody></table></div></div>
     <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message"></div></div>
   </div>
 
@@ -189,15 +189,12 @@ const MEASURE_CATEGORIES = [
 // ==================== ФОРМАТ ДАТЫ (ДД.ММ.ГГГГ) ====================
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  // Если пришел объект Date или строка в формате ISO
   let d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
     return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
   }
-  // Если пришла строка в формате ДД.ММ или ДД.ММ.ГГГГ
   let parts = dateStr.split(/[.\/]/);
   if (parts.length === 2) {
-    // Добавляем текущий год
     let year = new Date().getFullYear();
     return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${year}`;
   }
@@ -207,20 +204,9 @@ function formatDate(dateStr) {
   return dateStr;
 }
 
-// Получить сегодняшнюю дату в формате ДД.ММ.ГГГГ для сравнения
 function getTodayFormatted() {
   let d = new Date();
   return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
-}
-
-// Получить дату для input type="date" (YYYY-MM-DD) из формата ДД.ММ.ГГГГ
-function toInputDate(dateStr) {
-  if (!dateStr) return '';
-  let parts = dateStr.split('.');
-  if (parts.length === 3) {
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-  }
-  return '';
 }
 
 function showMessage(elId, text, type) {
@@ -385,7 +371,7 @@ function getWaterByDay(water) {
 }
 
 function getLastNDays(dailyData, n = 7) {
-  let dates = Object.keys(dailyData).sort().reverse();
+  let dates = Object.keys(dailyData).sort().reverse(); // свежие даты первыми
   let lastDates = dates.slice(0, n);
   let filtered = {};
   lastDates.forEach(d => { filtered[d] = dailyData[d]; });
@@ -416,8 +402,8 @@ function renderDashboardAndHistory() {
   }
   document.getElementById('remaining-items').innerHTML = remHtml;
 
-  // Нутриенты за неделю
-  let weekLabels = [...lastWeekDates].reverse();
+  // Нутриенты за неделю (график)
+  let weekLabels = [...lastWeekDates].reverse(); // для графика: от старых к новым
   let kcalData = weekLabels.map(d => lastWeekDaily[d]?.kcal || 0);
   let protData = weekLabels.map(d => lastWeekDaily[d]?.protein || 0);
   let carbsData = weekLabels.map(d => lastWeekDaily[d]?.carbs || 0);
@@ -443,9 +429,9 @@ function renderDashboardAndHistory() {
     <div class="water-card"><div class="water-value">${todayWater} мл</div><div>сегодня / ${GOALS.water} мл</div><div class="bar-track"><div class="bar-fill water" style="width:${Math.min(100, todayWater / GOALS.water * 100)}%"></div></div></div>
     <div class="water-card"><div class="water-value">${Math.round(avgWater)} мл</div><div>среднее за 7 дней</div></div>`;
 
-  // Недельные дни
+  // Недельные дни - свежие сверху (lastWeekDates уже свежие первыми)
   let weekDaysHtml = '';
-  weekLabels.forEach((date, i) => {
+  lastWeekDates.forEach((date, i) => {
     let day = lastWeekDaily[date];
     if (!day) return;
     let waterAmt = waterByDay[date] || 0;
@@ -455,7 +441,7 @@ function renderDashboardAndHistory() {
   });
   document.getElementById('week-days').innerHTML = weekDaysHtml || '<div class="empty-state">Нет записей за последнюю неделю</div>';
 
-  // Полная история
+  // Полная история (свежие сверху)
   let allDates = Object.keys(dailyAll).sort().reverse();
   let fullHtml = '';
   allDates.forEach(date => {
@@ -485,31 +471,40 @@ function renderMeasuresTable() {
     document.getElementById('weight-stats').innerHTML = '<div class="weight-stat-card">Нет данных о весе</div>';
   }
 
-  // График веса
+  // График веса (от старых к новым для корректного отображения)
+  let weightsSorted = [...appData.weights].sort((a, b) => a.date.localeCompare(b.date));
   if (charts.weight) charts.weight.destroy();
   let wCtx = document.getElementById('weightChart')?.getContext('2d');
-  if (wCtx && appData.weights.length) {
+  if (wCtx && weightsSorted.length) {
     charts.weight = new Chart(wCtx, {
       type: 'line', data: {
-        labels: appData.weights.map(w => w.date),
-        datasets: [{ label: 'Вес (кг)', data: appData.weights.map(w => w.weight), borderColor: '#F1C800', tension: 0.3, fill: false }, { label: `Цель ${GOALS.targetWeight} кг`, data: Array(appData.weights.length).fill(GOALS.targetWeight), borderColor: '#F16D00', borderDash: [5, 5] }]
+        labels: weightsSorted.map(w => w.date),
+        datasets: [{ label: 'Вес (кг)', data: weightsSorted.map(w => w.weight), borderColor: '#F1C800', tension: 0.3, fill: false }, { label: `Цель ${GOALS.targetWeight} кг`, data: Array(weightsSorted.length).fill(GOALS.targetWeight), borderColor: '#F16D00', borderDash: [5, 5] }]
       }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
     });
   }
 
-  // Таблица замеров
+  // Таблица замеров - даты справа налево (слева новые, справа старые)
   if (!appData.measures.length) {
     document.getElementById('measures-table').innerHTML = '<thead><tr><th>Параметр</th></tr></thead><tbody><tr><td>Нет данных. Добавьте первый замер</td></tr></tbody>';
     return;
   }
-  let sorted = [...appData.measures].sort((a, b) => a.date.localeCompare(b.date));
-  let thead = '<thead><tr><th>Параметр</th>' + sorted.map(m => `<th>${m.date}</th>`).join('') + '</tr></thead><tbody>';
+  // Сортируем по дате (от старых к новым), затем для отображения разворачиваем
+  let sortedAsc = [...appData.measures].sort((a, b) => a.date.localeCompare(b.date));
+  let sortedDesc = [...sortedAsc].reverse(); // новые даты первыми (слева)
+  
+  let thead = '<thead><tr><th>Параметр</th>';
+  sortedDesc.forEach(m => { thead += `<th>${m.date}</th>`; });
+  thead += '</tr></thead><tbody>';
+  
   MEASURE_CATEGORIES.forEach(cat => {
     if (cat.key === 'date') return;
     thead += `<tr><td style="text-align:left">${cat.name}, ${cat.unit}</td>`;
-    sorted.forEach((m, idx) => {
+    sortedDesc.forEach((m, idx) => {
       let val = m[cat.key];
-      let prev = idx > 0 ? sorted[idx - 1][cat.key] : null;
+      // Для дельты нужно сравнивать с более старой датой (следующей в списке sortedDesc)
+      let nextIdx = idx + 1;
+      let prev = nextIdx < sortedDesc.length ? sortedDesc[nextIdx][cat.key] : null;
       let delta = '';
       if (prev !== null && val !== 0 && prev !== 0) {
         let d = val - prev;
@@ -522,13 +517,13 @@ function renderMeasuresTable() {
   thead += '</tbody>';
   document.getElementById('measures-table').innerHTML = thead;
 
-  // График замеров
+  // График замеров (от старых к новым для корректной линии)
   let ctx = document.getElementById('measuresChart')?.getContext('2d');
   if (ctx) {
     if (charts.measures) charts.measures.destroy();
     let keyParams = [{ key: 'weight', name: 'Вес (кг)', color: '#F1C800' }, { key: 'waist', name: 'Талия (см)', color: '#F16D00' }, { key: 'chest', name: 'Грудь (см)', color: '#5af5c8' }, { key: 'shoulders', name: 'Плечи (см)', color: '#a78bfa' }];
-    let datasets = keyParams.map(p => ({ label: p.name, data: sorted.map(m => m[p.key]), borderColor: p.color, backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 }));
-    charts.measures = new Chart(ctx, { type: 'line', data: { labels: sorted.map(m => m.date), datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } } });
+    let datasets = keyParams.map(p => ({ label: p.name, data: sortedAsc.map(m => m[p.key]), borderColor: p.color, backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 }));
+    charts.measures = new Chart(ctx, { type: 'line', data: { labels: sortedAsc.map(m => m.date), datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } } });
   }
 }
 
