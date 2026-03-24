@@ -22,7 +22,6 @@
     --carbs-color: #5af5c8;
     --fat-color: #ff6b6b;
     --water-color: #4d9eff;
-    --measure-color: #a78bfa;
     --warning: #ffaa44;
     --danger: #ff5555;
     --success: #5af55a;
@@ -55,7 +54,6 @@
   .remaining-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .charts-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 48px; }
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; }
-  .chart-card.wide { grid-column: 1; }
   .chart-title { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
   .chart-wrap { position: relative; height: 220px; }
   .water-summary { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; }
@@ -117,6 +115,8 @@
   .weight-stat-value { font-family: 'Unbounded', sans-serif; font-size: 28px; font-weight: 700; color: var(--accent-a); }
   .loading, .empty-state { text-align: center; padding: 40px; color: var(--muted); background: var(--card); border-radius: 20px; }
   footer { text-align: center; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 24px; margin-top: 60px; }
+  .success-message { color: var(--success); font-size: 12px; margin-top: 8px; text-align: center; }
+  .error-message { color: var(--danger); font-size: 12px; margin-top: 8px; text-align: center; }
   @media (max-width: 768px) { .accordion-header { grid-template-columns: auto 1fr auto; } .accordion-summary { overflow-x: auto; } }
 </style>
 </head>
@@ -152,7 +152,7 @@
     <div class="input-form">
       <div class="form-tabs"><button class="form-tab active" onclick="switchAddTab('food')">🍽️ Еда</button><button class="form-tab" onclick="switchAddTab('water')">💧 Вода</button></div>
       <div id="food-panel"><div class="form-group"><label>Дата</label><input type="date" id="food-date"></div><div class="form-group"><label>Прием</label><select id="meal-type"><option>завтрак</option><option>обед</option><option>ужин</option><option>доп</option></select></div><div class="form-group"><label>Описание</label><input type="text" id="food-desc" placeholder="блюдо"></div><div class="form-row"><div class="form-group"><label>Ккал</label><input type="number" id="food-kcal"></div><div class="form-group"><label>Белок (г)</label><input type="number" id="food-protein" step="0.1"></div><div class="form-group"><label>Углеводы (г)</label><input type="number" id="food-carbs" step="0.1"></div><div class="form-group"><label>Жиры (г)</label><input type="number" id="food-fat" step="0.1"></div></div><button class="submit-btn" onclick="submitFood()">➕ Добавить</button><div id="food-message" class="submit-message"></div></div>
-      <div id="water-panel" style="display:none"><div class="form-group"><label>Дата</label><input type="date" id="water-date"></div><div class="form-group"><label>Вода (мл)</label><input type="number" id="water-amount"></div><button class="submit-btn" onclick="submitWater()">💧 Добавить</button><div id="water-message"></div></div>
+      <div id="water-panel" style="display:none"><div class="form-group"><label>Дата</label><input type="date" id="water-date"></div><div class="form-group"><label>Вода (мл)</label><input type="number" id="water-amount"></div><button class="submit-btn" onclick="submitWater()">💧 Добавить</button><div id="water-message" class="submit-message"></div></div>
     </div>
   </div>
 
@@ -160,8 +160,8 @@
   <div id="measures-tab" class="tab-content">
     <div class="weight-stats" id="weight-stats"></div>
     <div class="chart-card"><div class="chart-title">📈 Динамика веса</div><div class="chart-wrap" style="height:250px"><canvas id="weightChart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые даты → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody> <tr><td>Загрузка...</td></tr> </tbody></table></div></div>
-    <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message"></div></div>
+    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody>  <td>Загрузка...</td> </tbody></table></div></div>
+    <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message" class="submit-message"></div></div>
   </div>
 
   <!-- HISTORY -->
@@ -172,7 +172,8 @@
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
 const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz_jREXUBAmaDGUwoa_FfU-3NJq3XmTyWjmiZElWcWdyBf4c4cMIYHFmnJ2ybbK-FRJlQ/exec';
+// ⚠️ ВАЖНО: замените на ваш актуальный URL веб-приложения
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzcWHP5LLFcgItoNbKtSjG3axHudaSiX0zgRqXqGJLGJhCBnZ8przYTHaLZWPc3_7zuOA/exec';
 
 const GOALS = { kcal: 2800, protein: 160, carbs: 350, fat: 80, water: 2500, targetWeight: 82 };
 let appData = { foods: [], weights: [], water: [], measures: [] };
@@ -185,7 +186,7 @@ const MEASURE_CATEGORIES = [
   {key:'bicepL',name:'Бицепс Л',unit:'см'},{key:'bicepR',name:'Бицепс П',unit:'см'},{key:'neck',name:'Шея',unit:'см'}
 ];
 
-// ==================== ФОРМАТ ДАТЫ (ДД.ММ.ГГГГ) ====================
+// ==================== ФОРМАТ ДАТЫ ====================
 function formatDate(dateStr) {
   if (!dateStr) return '';
   let d = new Date(dateStr);
@@ -197,9 +198,7 @@ function formatDate(dateStr) {
     let year = new Date().getFullYear();
     return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${year}`;
   }
-  if (parts.length === 3) {
-    return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[2]}`;
-  }
+  if (parts.length === 3) return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[2]}`;
   return dateStr;
 }
 
@@ -210,10 +209,110 @@ function getTodayFormatted() {
 
 function showMessage(elId, text, type) {
   let el = document.getElementById(elId);
-  if (el) { el.textContent = text; el.style.color = type === 'error' ? 'var(--danger)' : 'var(--success)'; setTimeout(() => el.textContent = '', 3000); }
+  if (el) { el.textContent = text; el.className = type === 'error' ? 'error-message' : 'success-message'; setTimeout(() => { if(el) el.textContent = ''; }, 4000); }
 }
 
-// ==================== ЗАГРУЗКА ИЗ GOOGLE SHEETS ====================
+// ==================== ОТПРАВКА ДАННЫХ (исправлено) ====================
+async function postToSheet(action, data) {
+  try {
+    const formData = new URLSearchParams();
+    formData.append('action', action);
+    
+    if (action === 'food') {
+      formData.append('date', data.date);
+      formData.append('mealType', data.mealType);
+      formData.append('description', data.description);
+      formData.append('kcal', data.kcal);
+      formData.append('protein', data.protein);
+      formData.append('carbs', data.carbs);
+      formData.append('fat', data.fat);
+    } else if (action === 'water') {
+      formData.append('date', data.date);
+      formData.append('amount', data.amount);
+    } else if (action === 'measure') {
+      formData.append('date', data.date);
+      formData.append('age', data.age ?? '');
+      formData.append('weight', data.weight ?? '');
+      formData.append('calfL', data.calfL ?? '');
+      formData.append('calfR', data.calfR ?? '');
+      formData.append('thighL', data.thighL ?? '');
+      formData.append('thighR', data.thighR ?? '');
+      formData.append('waist', data.waist ?? '');
+      formData.append('hips', data.hips ?? '');
+      formData.append('chest', data.chest ?? '');
+      formData.append('shoulders', data.shoulders ?? '');
+      formData.append('bicepL', data.bicepL ?? '');
+      formData.append('bicepR', data.bicepR ?? '');
+      formData.append('neck', data.neck ?? '');
+    }
+    
+    const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
+    const result = await response.text();
+    console.log('Ответ сервера:', result);
+    return result === 'OK' || result.includes('success');
+  } catch (e) {
+    console.error('Ошибка отправки:', e);
+    return false;
+  }
+}
+
+// ==================== ОСТАЛЬНЫЕ ФУНКЦИИ ====================
+function submitFood() {
+  let dateInput = document.getElementById('food-date').value;
+  if (!dateInput) return showMessage('food-message', 'Выберите дату', 'error');
+  let date = formatDate(dateInput);
+  let meal = document.getElementById('meal-type').value, desc = document.getElementById('food-desc').value;
+  if (!desc) return showMessage('food-message', 'Введите описание', 'error');
+  let kcal = parseFloat(document.getElementById('food-kcal').value) || 0,
+      prot = parseFloat(document.getElementById('food-protein').value) || 0,
+      carbs = parseFloat(document.getElementById('food-carbs').value) || 0,
+      fat = parseFloat(document.getElementById('food-fat').value) || 0;
+  let newItem = { date, mealType: meal, description: desc, kcal, protein: prot, carbs, fat };
+  appData.foods.push(newItem);
+  postToSheet('food', { date: dateInput, mealType: meal, description: desc, kcal, protein: prot, carbs, fat });
+  showMessage('food-message', '✅ Добавлено! Обновите страницу', 'success');
+  document.getElementById('food-desc').value = '';
+  ['food-kcal', 'food-protein', 'food-carbs', 'food-fat'].forEach(id => { let el = document.getElementById(id); if (el) el.value = ''; });
+  renderDashboardAndHistory();
+}
+
+function submitWater() {
+  let dateInput = document.getElementById('water-date').value;
+  if (!dateInput) return showMessage('water-message', 'Выберите дату', 'error');
+  let date = formatDate(dateInput);
+  let amount = parseFloat(document.getElementById('water-amount').value);
+  if (!amount) return showMessage('water-message', 'Введите объём воды', 'error');
+  appData.water.push({ date, amount });
+  postToSheet('water', { date: dateInput, amount });
+  showMessage('water-message', '✅ Вода добавлена', 'success');
+  document.getElementById('water-amount').value = '';
+  renderDashboardAndHistory();
+}
+
+function submitMeasure() {
+  let dateInput = document.getElementById('measure-date')?.value;
+  if (!dateInput) return showMessage('measure-message', 'Выберите дату', 'error');
+  let date = formatDate(dateInput);
+  let m = { date };
+  for (let cat of MEASURE_CATEGORIES) {
+    if (cat.key === 'date') continue;
+    let val = parseFloat(document.getElementById(`measure-${cat.key}`)?.value);
+    if (!isNaN(val)) m[cat.key] = val;
+    else m[cat.key] = 0;
+  }
+  appData.measures.push(m);
+  appData.measures.sort((a, b) => a.date.localeCompare(b.date));
+  if (m.weight > 0) {
+    appData.weights.push({ date, weight: m.weight });
+    appData.weights.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  postToSheet('measure', { date: dateInput, ...m });
+  showMessage('measure-message', '✅ Замер добавлен', 'success');
+  renderMeasuresTable();
+  renderDashboardAndHistory();
+}
+
+// ==================== ЗАГРУЗКА ДАННЫХ ИЗ GOOGLE SHEETS ====================
 async function loadSheetAsCSV(sheetName) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
   const resp = await fetch(url);
@@ -287,68 +386,6 @@ function parseMeasuresData(rows) {
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-// ==================== ОТПРАВКА ДАННЫХ ====================
-async function postToSheet(action, data) {
-  try {
-    await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action, ...data }) });
-  } catch (e) { console.warn(e); }
-}
-
-function submitFood() {
-  let dateInput = document.getElementById('food-date').value;
-  if (!dateInput) return showMessage('food-message', 'Выберите дату', 'error');
-  let date = formatDate(dateInput);
-  let meal = document.getElementById('meal-type').value, desc = document.getElementById('food-desc').value;
-  if (!desc) return showMessage('food-message', 'Введите описание', 'error');
-  let kcal = parseFloat(document.getElementById('food-kcal').value) || 0,
-      prot = parseFloat(document.getElementById('food-protein').value) || 0,
-      carbs = parseFloat(document.getElementById('food-carbs').value) || 0,
-      fat = parseFloat(document.getElementById('food-fat').value) || 0;
-  let newItem = { date, mealType: meal, description: desc, kcal, protein: prot, carbs, fat };
-  appData.foods.push(newItem);
-  postToSheet('food', { date: dateInput, mealType: meal, description: desc, kcal, protein: prot, carbs, fat });
-  showMessage('food-message', 'Добавлено! Обновите страницу', 'success');
-  document.getElementById('food-desc').value = '';
-  ['food-kcal', 'food-protein', 'food-carbs', 'food-fat'].forEach(id => { let el = document.getElementById(id); if (el) el.value = ''; });
-  renderDashboardAndHistory();
-}
-
-function submitWater() {
-  let dateInput = document.getElementById('water-date').value;
-  if (!dateInput) return showMessage('water-message', 'Выберите дату', 'error');
-  let date = formatDate(dateInput);
-  let amount = parseFloat(document.getElementById('water-amount').value);
-  if (!amount) return showMessage('water-message', 'Введите объём воды', 'error');
-  appData.water.push({ date, amount });
-  postToSheet('water', { date: dateInput, amount });
-  showMessage('water-message', 'Вода добавлена', 'success');
-  document.getElementById('water-amount').value = '';
-  renderDashboardAndHistory();
-}
-
-function submitMeasure() {
-  let dateInput = document.getElementById('measure-date')?.value;
-  if (!dateInput) return showMessage('measure-message', 'Выберите дату', 'error');
-  let date = formatDate(dateInput);
-  let m = { date };
-  for (let cat of MEASURE_CATEGORIES) {
-    if (cat.key === 'date') continue;
-    let val = parseFloat(document.getElementById(`measure-${cat.key}`)?.value);
-    if (!isNaN(val)) m[cat.key] = val;
-    else m[cat.key] = 0;
-  }
-  appData.measures.push(m);
-  appData.measures.sort((a, b) => a.date.localeCompare(b.date));
-  if (m.weight > 0) {
-    appData.weights.push({ date, weight: m.weight });
-    appData.weights.sort((a, b) => a.date.localeCompare(b.date));
-  }
-  postToSheet('measure', { date: dateInput, ...m });
-  showMessage('measure-message', 'Замер добавлен', 'success');
-  renderMeasuresTable();
-  renderDashboardAndHistory();
-}
-
 // ==================== ОТРИСОВКА ====================
 function aggregateByDay(foods) {
   let daily = {};
@@ -381,17 +418,10 @@ function renderDashboardAndHistory() {
   let dailyAll = aggregateByDay(appData.foods);
   let waterByDay = getWaterByDay(appData.water);
   let { filtered: lastWeekDaily, dates: lastWeekDates } = getLastNDays(dailyAll, 7);
-
   let today = getTodayFormatted();
   let todayData = dailyAll[today] || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
   let todayWater = waterByDay[today] || 0;
-  let rem = {
-    kcal: GOALS.kcal - todayData.kcal,
-    protein: GOALS.protein - todayData.protein,
-    carbs: GOALS.carbs - todayData.carbs,
-    fat: GOALS.fat - todayData.fat,
-    water: GOALS.water - todayWater
-  };
+  let rem = { kcal: GOALS.kcal - todayData.kcal, protein: GOALS.protein - todayData.protein, carbs: GOALS.carbs - todayData.carbs, fat: GOALS.fat - todayData.fat, water: GOALS.water - todayWater };
   let remHtml = '';
   for (let [k, v] of Object.entries(rem)) {
     let rounded = Math.round(v * 10) / 10;
@@ -409,14 +439,12 @@ function renderDashboardAndHistory() {
   let nCtx = document.getElementById('nutrientsChart')?.getContext('2d');
   if (nCtx && weekLabels.length) {
     charts.nutrients = new Chart(nCtx, {
-      type: 'bar', data: {
-        labels: weekLabels, datasets: [
-          { label: 'Ккал', data: kcalData, backgroundColor: 'rgba(241,200,0,0.8)', yAxisID: 'yKcal' },
-          { label: 'Белок г', data: protData, backgroundColor: 'rgba(241,109,0,0.8)', yAxisID: 'yGrams' },
-          { label: 'Углеводы г', data: carbsData, backgroundColor: 'rgba(90,245,200,0.8)', yAxisID: 'yGrams' },
-          { label: 'Жиры г', data: fatData, backgroundColor: 'rgba(255,107,107,0.8)', yAxisID: 'yGrams' }
-        ]
-      }, options: { responsive: true, maintainAspectRatio: false, scales: { yKcal: { min: 0, max: 4000, position: 'left' }, yGrams: { min: 0, max: 500, position: 'right' } } }
+      type: 'bar', data: { labels: weekLabels, datasets: [
+        { label: 'Ккал', data: kcalData, backgroundColor: 'rgba(241,200,0,0.8)', yAxisID: 'yKcal' },
+        { label: 'Белок г', data: protData, backgroundColor: 'rgba(241,109,0,0.8)', yAxisID: 'yGrams' },
+        { label: 'Углеводы г', data: carbsData, backgroundColor: 'rgba(90,245,200,0.8)', yAxisID: 'yGrams' },
+        { label: 'Жиры г', data: fatData, backgroundColor: 'rgba(255,107,107,0.8)', yAxisID: 'yGrams' }
+      ] }, options: { responsive: true, maintainAspectRatio: false, scales: { yKcal: { min: 0, max: 4000, position: 'left' }, yGrams: { min: 0, max: 500, position: 'right' } } }
     });
   }
 
@@ -429,7 +457,6 @@ function renderDashboardAndHistory() {
   lastWeekDates.forEach((date, i) => {
     let day = lastWeekDaily[date];
     if (!day) return;
-    let waterAmt = waterByDay[date] || 0;
     let p = (val, goal) => (val / goal) * 100;
     let kcalP = p(day.kcal, GOALS.kcal), protP = p(day.protein, GOALS.protein), carbsP = p(day.carbs, GOALS.carbs), fatP = p(day.fat, GOALS.fat);
     weekDaysHtml += `<div class="day-block"><div class="accordion ${i === 0 ? 'open' : ''}" id="dash-day-${date.replace(/\./g, '-')}"><div class="accordion-header" onclick="toggle('dash-day-${date.replace(/\./g, '-')}')"><div class="day-label">${date}</div><div class="accordion-summary"><div class="summary-macro"><div class="summary-val kcal">${Math.round(day.kcal)}</div><div class="summary-label">ккал</div></div><div class="summary-macro"><div class="summary-val protein">${Math.round(day.protein)}г</div><div class="summary-label">белок</div></div><div class="summary-macro"><div class="summary-val carbs">${Math.round(day.carbs)}г</div><div class="summary-label">углев.</div></div><div class="summary-macro"><div class="summary-val fat">${Math.round(day.fat)}г</div><div class="summary-label">жиры</div></div></div><div class="accordion-bars"><div class="bar-row"><div class="bar-track"><div class="bar-fill kcal" style="width:${Math.min(100, kcalP)}%"></div></div><div class="bar-pct">${kcalP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill protein" style="width:${Math.min(100, protP)}%"></div></div><div class="bar-pct">${protP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill carbs" style="width:${Math.min(100, carbsP)}%"></div></div><div class="bar-pct">${carbsP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill fat" style="width:${Math.min(100, fatP)}%"></div></div><div class="bar-pct">${fatP.toFixed(0)}%</div></div></div><div class="accordion-chevron">▾</div></div><div class="accordion-body"><div class="accordion-inner">${day.meals.map(m => `<div class="meal-card"><div class="meal-type">${m.mealType}</div><div class="meal-desc"><strong>${m.description}</strong></div><div class="meal-macros"><div class="macro"><div class="macro-val kcal">${Math.round(m.kcal)}</div><div class="macro-label">ккал</div></div><div class="macro"><div class="macro-val protein">${Math.round(m.protein)}г</div><div class="macro-label">белок</div></div><div class="macro"><div class="macro-val carbs">${Math.round(m.carbs)}г</div><div class="macro-label">углев.</div></div><div class="macro"><div class="macro-val fat">${Math.round(m.fat)}г</div><div class="macro-label">жиры</div></div></div></div>`).join('')}</div></div></div></div>`;
@@ -440,7 +467,6 @@ function renderDashboardAndHistory() {
   let fullHtml = '';
   allDates.forEach(date => {
     let day = dailyAll[date];
-    let waterAmt = waterByDay[date] || 0;
     let p = (val, goal) => (val / goal) * 100;
     let kcalP = p(day.kcal, GOALS.kcal), protP = p(day.protein, GOALS.protein), carbsP = p(day.carbs, GOALS.carbs), fatP = p(day.fat, GOALS.fat);
     fullHtml += `<div class="day-block"><div class="accordion" id="day-${date.replace(/\./g, '-')}"><div class="accordion-header" onclick="toggle('day-${date.replace(/\./g, '-')}')"><div class="day-label">${date}</div><div class="accordion-summary"><div class="summary-macro"><div class="summary-val kcal">${Math.round(day.kcal)}</div><div class="summary-label">ккал</div></div><div class="summary-macro"><div class="summary-val protein">${Math.round(day.protein)}г</div><div class="summary-label">белок</div></div><div class="summary-macro"><div class="summary-val carbs">${Math.round(day.carbs)}г</div><div class="summary-label">углев.</div></div><div class="summary-macro"><div class="summary-val fat">${Math.round(day.fat)}г</div><div class="summary-label">жиры</div></div></div><div class="accordion-bars"><div class="bar-row"><div class="bar-track"><div class="bar-fill kcal" style="width:${Math.min(100, kcalP)}%"></div></div><div class="bar-pct">${kcalP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill protein" style="width:${Math.min(100, protP)}%"></div></div><div class="bar-pct">${protP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill carbs" style="width:${Math.min(100, carbsP)}%"></div></div><div class="bar-pct">${carbsP.toFixed(0)}%</div></div><div class="bar-row"><div class="bar-track"><div class="bar-fill fat" style="width:${Math.min(100, fatP)}%"></div></div><div class="bar-pct">${fatP.toFixed(0)}%</div></div></div><div class="accordion-chevron">▾</div></div><div class="accordion-body"><div class="accordion-inner">${day.meals.map(m => `<div class="meal-card"><div class="meal-type">${m.mealType}</div><div class="meal-desc"><strong>${m.description}</strong></div><div class="meal-macros"><div class="macro"><div class="macro-val kcal">${Math.round(m.kcal)}</div><div class="macro-label">ккал</div></div><div class="macro"><div class="macro-val protein">${Math.round(m.protein)}г</div><div class="macro-label">белок</div></div><div class="macro"><div class="macro-val carbs">${Math.round(m.carbs)}г</div><div class="macro-label">углев.</div></div><div class="macro"><div class="macro-val fat">${Math.round(m.fat)}г</div><div class="macro-label">жиры</div></div></div></div>`).join('')}</div></div></div></div>`;
@@ -469,28 +495,24 @@ function renderMeasuresTable() {
   let wCtx = document.getElementById('weightChart')?.getContext('2d');
   if (wCtx && weightsSorted.length) {
     charts.weight = new Chart(wCtx, {
-      type: 'line', data: {
-        labels: weightsSorted.map(w => w.date),
-        datasets: [{ label: 'Вес (кг)', data: weightsSorted.map(w => w.weight), borderColor: '#F1C800', tension: 0.3, fill: false }, { label: `Цель ${GOALS.targetWeight} кг`, data: Array(weightsSorted.length).fill(GOALS.targetWeight), borderColor: '#F16D00', borderDash: [5, 5] }]
-      }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
+      type: 'line', data: { labels: weightsSorted.map(w => w.date), datasets: [{ label: 'Вес (кг)', data: weightsSorted.map(w => w.weight), borderColor: '#F1C800', tension: 0.3, fill: false }, { label: `Цель ${GOALS.targetWeight} кг`, data: Array(weightsSorted.length).fill(GOALS.targetWeight), borderColor: '#F16D00', borderDash: [5, 5] }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
     });
   }
 
   if (!appData.measures.length) {
-    document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody>  <td>Нет данных. Добавьте первый замер</td> </tbody>';
+    document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody>   <td>Нет данных. Добавьте первый замер</td> </tbody>';
     return;
   }
   
-  // Сортировка от старых к новым (слева старые, справа новые)
   let sortedAsc = [...appData.measures].sort((a, b) => a.date.localeCompare(b.date));
-  
   let thead = '<thead> <th>Параметр</th>';
   sortedAsc.forEach(m => { thead += `<th>${m.date}</th>`; });
   thead += ' </thead><tbody>';
   
   MEASURE_CATEGORIES.forEach(cat => {
     if (cat.key === 'date') return;
-    thead += ` <td style="text-align:left">${cat.name}, ${cat.unit} </td>`;
+    thead += ` <td style="text-align:left">${cat.name}, ${cat.unit}  `;
     sortedAsc.forEach((m, idx) => {
       let val = m[cat.key];
       let prev = idx > 0 ? sortedAsc[idx - 1][cat.key] : null;
@@ -499,9 +521,9 @@ function renderMeasuresTable() {
         let d = val - prev;
         delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
       }
-      thead += ` <td>${val !== 0 ? val.toFixed(1) : '—'} ${delta}</td>`;
+      thead += `  <td>${val !== 0 ? val.toFixed(1) : '—'} ${delta}</td>`;
     });
-    thead += ` </tr>`;
+    thead += `  </tr>`;
   });
   thead += '</tbody>';
   document.getElementById('measures-table').innerHTML = thead;
@@ -569,7 +591,6 @@ function setDefaultDates() {
 setDefaultDates();
 renderMeasureFormFields();
 loadAllData();
-// Автоматическое обновление УБРАНО
 </script>
 </body>
 </html>
