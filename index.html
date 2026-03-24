@@ -560,4 +560,52 @@ function updateCharts() {
         plugins: { legend: { labels: { color: '#666', font: { size: 11 } } } },
         scales: {
           x: { grid: { color: '#1e1e1e' }, ticks: { color: '#666' } },
-          yKcal: { position: 'left', grid: { color: '#1e1e1e' }, ticks: { color: '#f5a623'
+          yKcal: { position: 'left', grid: { color: '#1e1e1e' }, ticks: { color: '#f5a623' }, min: 0, max: 4000 },
+          yGrams: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#5af5c8' }, min: 0, max: 500 }
+        }
+      }
+    });
+  }
+}
+
+async function loadAllData() {
+  document.getElementById('app').innerHTML = '<div class="loading">📡 Загрузка данных из Google Sheets...</div>';
+  
+  try {
+    const [foodRows, weightRows, waterRows] = await Promise.all([
+      loadSheetAsCSV(SHEET_FOOD),
+      loadSheetAsCSV(SHEET_WEIGHT),
+      loadSheetAsCSV(SHEET_WATER)
+    ]);
+    
+    appData.foods = parseFoodData(foodRows);
+    appData.weights = parseWeightData(weightRows);
+    appData.water = parseWaterData(waterRows);
+    
+    console.log(`✅ Загружено: еда=${appData.foods.length}, вес=${appData.weights.length}, вода=${appData.water.length}`);
+    renderUI();
+  } catch (error) {
+    console.error('❌ Ошибка:', error);
+    document.getElementById('app').innerHTML = `
+      <div class="empty-state">
+        ❌ Ошибка загрузки данных: ${error.message}<br><br>
+        <strong>Чтобы исправить:</strong><br>
+        1. Откройте таблицу: <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}" target="_blank" style="color:var(--accent)">открыть таблицу</a><br>
+        2. Нажмите <strong>Файл → Поделиться → Доступ для всех с ссылкой</strong><br>
+        3. Убедитесь, что есть листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
+      </div>
+    `;
+  }
+}
+
+function toggle(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+// Запуск загрузки и автообновление каждые 5 минут
+loadAllData();
+setInterval(loadAllData, 300000);
+</script>
+</body>
+</html>
