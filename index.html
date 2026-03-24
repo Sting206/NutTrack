@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Onest:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+  /* (стили без изменений, такие же как в предыдущей версии) */
   :root {
     --primary: #0A38A1;
     --primary-dark: #062E89;
@@ -160,7 +161,7 @@
   <div id="measures-tab" class="tab-content">
     <div class="weight-stats" id="weight-stats"></div>
     <div class="chart-card"><div class="chart-title">📈 Динамика веса</div><div class="chart-wrap" style="height:250px"><canvas id="weightChart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody>  <td>Загрузка...</td> </tbody></table></div></div>
+    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody>   <td>Загрузка... </td> </tbody></table></div></div>
     <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message" class="submit-message"></div></div>
   </div>
 
@@ -172,7 +173,6 @@
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
 const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
-// ⚠️ ВАЖНО: замените на ваш актуальный URL веб-приложения
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzcWHP5LLFcgItoNbKtSjG3axHudaSiX0zgRqXqGJLGJhCBnZ8przYTHaLZWPc3_7zuOA/exec';
 
 const GOALS = { kcal: 2800, protein: 160, carbs: 350, fat: 80, water: 2500, targetWeight: 82 };
@@ -186,7 +186,7 @@ const MEASURE_CATEGORIES = [
   {key:'bicepL',name:'Бицепс Л',unit:'см'},{key:'bicepR',name:'Бицепс П',unit:'см'},{key:'neck',name:'Шея',unit:'см'}
 ];
 
-// ==================== ФОРМАТ ДАТЫ ====================
+// ==================== ФОРМАТ ДАТЫ (ДД.ММ.ГГГГ) И СОРТИРОВКА ====================
 function formatDate(dateStr) {
   if (!dateStr) return '';
   let d = new Date(dateStr);
@@ -202,6 +202,22 @@ function formatDate(dateStr) {
   return dateStr;
 }
 
+// Преобразование даты в число для корректной сортировки (YYYYMMDD)
+function dateToSortValue(dateStr) {
+  if (!dateStr) return 0;
+  let parts = dateStr.split('.');
+  if (parts.length === 3) {
+    return parseInt(parts[2] + parts[1].padStart(2,'0') + parts[0].padStart(2,'0'));
+  }
+  return 0;
+}
+
+// Форматирование числа с одним знаком после запятой
+function formatNumber(val) {
+  if (val === 0) return '—';
+  return val.toFixed(1);
+}
+
 function getTodayFormatted() {
   let d = new Date();
   return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
@@ -212,7 +228,7 @@ function showMessage(elId, text, type) {
   if (el) { el.textContent = text; el.className = type === 'error' ? 'error-message' : 'success-message'; setTimeout(() => { if(el) el.textContent = ''; }, 4000); }
 }
 
-// ==================== ОТПРАВКА ДАННЫХ (исправлено) ====================
+// ==================== ОТПРАВКА ДАННЫХ ====================
 async function postToSheet(action, data) {
   try {
     const formData = new URLSearchParams();
@@ -256,7 +272,6 @@ async function postToSheet(action, data) {
   }
 }
 
-// ==================== ОСТАЛЬНЫЕ ФУНКЦИИ ====================
 function submitFood() {
   let dateInput = document.getElementById('food-date').value;
   if (!dateInput) return showMessage('food-message', 'Выберите дату', 'error');
@@ -301,10 +316,11 @@ function submitMeasure() {
     else m[cat.key] = 0;
   }
   appData.measures.push(m);
-  appData.measures.sort((a, b) => a.date.localeCompare(b.date));
+  // Сортировка по числовому значению даты
+  appData.measures.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   if (m.weight > 0) {
     appData.weights.push({ date, weight: m.weight });
-    appData.weights.sort((a, b) => a.date.localeCompare(b.date));
+    appData.weights.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   }
   postToSheet('measure', { date: dateInput, ...m });
   showMessage('measure-message', '✅ Замер добавлен', 'success');
@@ -383,7 +399,8 @@ function parseMeasuresData(rows) {
       bicepL: parseFloat(r[11]) || 0, bicepR: parseFloat(r[12]) || 0, neck: parseFloat(r[13]) || 0
     });
   }
-  return out.sort((a, b) => a.date.localeCompare(b.date));
+  // Сортировка по числовому значению даты (от старых к новым)
+  return out.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
 }
 
 // ==================== ОТРИСОВКА ====================
@@ -407,8 +424,9 @@ function getWaterByDay(water) {
 }
 
 function getLastNDays(dailyData, n = 7) {
-  let dates = Object.keys(dailyData).sort().reverse();
-  let lastDates = dates.slice(0, n);
+  // Сортируем даты по числовому значению и берем последние n
+  let dates = Object.keys(dailyData).sort((a,b) => dateToSortValue(a) - dateToSortValue(b));
+  let lastDates = dates.slice(-n).reverse(); // свежие первыми
   let filtered = {};
   lastDates.forEach(d => { filtered[d] = dailyData[d]; });
   return { filtered, dates: lastDates };
@@ -463,7 +481,7 @@ function renderDashboardAndHistory() {
   });
   document.getElementById('week-days').innerHTML = weekDaysHtml || '<div class="empty-state">Нет записей за последнюю неделю</div>';
 
-  let allDates = Object.keys(dailyAll).sort().reverse();
+  let allDates = Object.keys(dailyAll).sort((a,b) => dateToSortValue(b) - dateToSortValue(a));
   let fullHtml = '';
   allDates.forEach(date => {
     let day = dailyAll[date];
@@ -490,7 +508,7 @@ function renderMeasuresTable() {
     document.getElementById('weight-stats').innerHTML = '<div class="weight-stat-card">Нет данных о весе</div>';
   }
 
-  let weightsSorted = [...appData.weights].sort((a, b) => a.date.localeCompare(b.date));
+  let weightsSorted = [...appData.weights].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   if (charts.weight) charts.weight.destroy();
   let wCtx = document.getElementById('weightChart')?.getContext('2d');
   if (wCtx && weightsSorted.length) {
@@ -501,11 +519,12 @@ function renderMeasuresTable() {
   }
 
   if (!appData.measures.length) {
-    document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody>   <td>Нет данных. Добавьте первый замер</td> </tbody>';
+    document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody>    <td colspan="10">Нет данных. Добавьте первый замер</td> </tbody>';
     return;
   }
   
-  let sortedAsc = [...appData.measures].sort((a, b) => a.date.localeCompare(b.date));
+  // Сортировка от старых к новым для таблицы (слева старые)
+  let sortedAsc = [...appData.measures].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   let thead = '<thead> <th>Параметр</th>';
   sortedAsc.forEach(m => { thead += `<th>${m.date}</th>`; });
   thead += ' </thead><tbody>';
@@ -521,9 +540,11 @@ function renderMeasuresTable() {
         let d = val - prev;
         delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
       }
-      thead += `  <td>${val !== 0 ? val.toFixed(1) : '—'} ${delta}</td>`;
+      // Форматирование числа с одним знаком после запятой
+      let displayVal = val === 0 ? '—' : val.toFixed(1);
+      thead += `   <td>${displayVal} ${delta}</td>`;
     });
-    thead += `  </tr>`;
+    thead += `   </tr>`;
   });
   thead += '</tbody>';
   document.getElementById('measures-table').innerHTML = thead;
@@ -551,7 +572,7 @@ async function loadAllData() {
     appData.water = parseWaterData(water);
     appData.measures = parseMeasuresData(measures);
     appData.weights = appData.measures.filter(m => m.weight > 0).map(m => ({ date: m.date, weight: m.weight }));
-    appData.weights.sort((a, b) => a.date.localeCompare(b.date));
+    appData.weights.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
     renderDashboardAndHistory();
     renderMeasuresTable();
   } catch (e) {
