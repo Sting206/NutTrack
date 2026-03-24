@@ -124,7 +124,7 @@
       <div class="goals-header">
         <strong>Цели в день</strong><br>
         🔥 2800 ккал &nbsp;|&nbsp; 💪 160г белка &nbsp;|&nbsp; 🌾 350г углеводов &nbsp;|&nbsp; 💧 2.5л воды<br>
-        <span style="color:#555">Цель веса: 70 кг</span>
+        <span style="color:#555">Цель веса: 80 кг</span>
       </div>
       <div class="refresh-status">
         <span id="lastUpdate">Загрузка данных...</span>
@@ -451,7 +451,7 @@ function updateCharts() {
         labels: appData.weights.map(w => w.date),
         datasets: [
           { label: 'Вес', data: appData.weights.map(w => w.weight), borderColor: '#c8f55a', backgroundColor: 'rgba(200,245,90,0.07)', pointBackgroundColor: '#c8f55a', pointRadius: 5, tension: 0.3, fill: true },
-          { label: 'Цель 70 кг', data: Array(appData.weights.length).fill(70), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
+          { label: 'Цель 70 кг', data: Array(appData.weights.length).fill(80), borderColor: '#2a2a2a', borderDash: [6, 4], pointRadius: 0 }
         ]
       },
       options: {
