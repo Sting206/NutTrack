@@ -57,8 +57,6 @@
   .weight-label { font-size: 11px; color: var(--muted); }
   .weight-val { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; }
   .weight-val.morning { color: #f5c842; }
-  .weight-delta { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .weight-delta.up { color: var(--accent); }
   .day-block { margin-bottom: 12px; animation: fadeUp 0.5s ease both; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   .accordion { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
@@ -140,19 +138,15 @@
   </div>
 
   <footer id="footer">
-    Цель: 70 кг · Данные из Google Sheets · Обновляется автоматически
+    Цель: 70 кг · Данные из Google Sheets (публичная таблица) · Обновляется автоматически
   </footer>
 </div>
 
 <script>
 // ==================== КОНФИГУРАЦИЯ ====================
-// ПРАВИЛЬНЫЙ ID таблицы (только то, что между /d/ и /edit)
 const SHEET_ID = '1A0NOB0Rbx-u-gg6gaKTR1mMbZGwJHUzV9b63o9sqr3w';
-// ⚠️ ВАЖНО: API ключ нужно создать в Google Cloud Console!
-// Как создать: https://console.cloud.google.com/ → создать проект → включить Sheets API → создать API ключ
-const API_KEY = 'AIzaSyA35jipfvXebovi2hDMkk_AGaraPMbCKbw';  // ⚠️ ЗАМЕНИТЕ НА РЕАЛЬНЫЙ КЛЮЧ!
 
-// Названия листов (должны совпадать с названиями в вашей таблице)
+// Названия листов
 const SHEET_FOOD = 'Питание';
 const SHEET_WEIGHT = 'Вес';
 const SHEET_WATER = 'Вода';
@@ -168,20 +162,58 @@ const GOALS = {
 let appData = { foods: [], weights: [], water: [] };
 let charts = {};
 
-// ==================== ЗАГРУЗКА ДАННЫХ ====================
-async function loadSheetData(sheetName, range = 'A:Z') {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}`;
+// ==================== ЗАГРУЗКА ЧЕРЕЗ CSV (НЕ ТРЕБУЕТ API) ====================
+async function loadSheetAsCSV(sheetName) {
+  // URL для экспорта листа как CSV (публичная таблица)
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  
   console.log(`Загрузка ${sheetName}...`);
   const response = await fetch(url);
+  
   if (!response.ok) {
-    throw new Error(`${sheetName}: ${response.status} ${response.statusText}`);
+    throw new Error(`${sheetName}: ${response.status} - возможно таблица не опубликована`);
   }
-  const data = await response.json();
-  return data.values || [];
+  
+  const csvText = await response.text();
+  return parseCSV(csvText);
+}
+
+function parseCSV(csvText) {
+  const rows = [];
+  const lines = csvText.split('\n');
+  
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+    
+    // Парсим CSV с учетом кавычек
+    const row = [];
+    let inQuotes = false;
+    let currentCell = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        row.push(currentCell.trim());
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+    row.push(currentCell.trim());
+    
+    // Убираем кавычки из ячеек
+    const cleanedRow = row.map(cell => cell.replace(/^"|"$/g, ''));
+    rows.push(cleanedRow);
+  }
+  
+  return rows;
 }
 
 function parseFoodData(rows) {
   if (!rows || rows.length < 2) return [];
+  
   const headers = rows[0].map(h => h.toLowerCase().trim());
   const dateIdx = headers.findIndex(h => h.includes('дата') || h === 'date');
   const mealIdx = headers.findIndex(h => h.includes('прием') || h.includes('meal') || h.includes('тип'));
@@ -209,6 +241,7 @@ function parseFoodData(rows) {
 
 function parseWeightData(rows) {
   if (!rows || rows.length < 2) return [];
+  
   const headers = rows[0].map(h => h.toLowerCase().trim());
   const dateIdx = headers.findIndex(h => h.includes('дата') || h === 'date');
   const weightIdx = headers.findIndex(h => h.includes('вес') || h === 'weight');
@@ -225,11 +258,12 @@ function parseWeightData(rows) {
       });
     }
   }
-  return weights.sort((a,b) => a.date.localeCompare(b.date));
+  return weights.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function parseWaterData(rows) {
   if (!rows || rows.length < 2) return [];
+  
   const headers = rows[0].map(h => h.toLowerCase().trim());
   const dateIdx = headers.findIndex(h => h.includes('дата') || h === 'date');
   const amountIdx = headers.findIndex(h => h.includes('мл') || h.includes('amount') || h.includes('вода'));
@@ -251,13 +285,18 @@ function parseWaterData(rows) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
+  
+  // Убираем время если есть
+  dateStr = dateStr.split(' ')[0];
+  
   let d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
-    return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`;
+    return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}`;
   }
+  
   const parts = dateStr.split(/[.\/]/);
   if (parts.length >= 2) {
-    return `${parts[0].padStart(2,'0')}.${parts[1].padStart(2,'0')}`;
+    return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}`;
   }
   return dateStr;
 }
@@ -292,8 +331,10 @@ function renderUI() {
   if (dates.length === 0 && appData.weights.length === 0) {
     document.getElementById('app').innerHTML = `
       <div class="empty-state">
-        📭 Нет данных. Добавьте данные в Google Sheets.<br>
-        Листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"<br><br>
+        📭 Нет данных. Добавьте данные в Google Sheets.<br><br>
+        <strong>Как опубликовать таблицу:</strong><br>
+        1. Откройте таблицу → Файл → Поделиться → Доступ для всех с ссылкой<br>
+        2. Листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"<br><br>
         <strong>Пример структуры листа "Питание":</strong><br>
         Дата | Прием | Описание | ккал | белок | углеводы<br>
         24.03.2025 | завтрак | Овсянка с бананом | 450 | 15 | 70
@@ -308,7 +349,7 @@ function renderUI() {
         <div class="chart-title">📈 Динамика веса <span>кг</span></div>
         <div class="chart-wrap tall"><canvas id="weightChart"></canvas></div>
         <div class="weight-cards" style="margin-top:16px; display:flex; gap:12px; overflow-x:auto">
-          ${appData.weights.slice().reverse().slice(0,7).map(w => `
+          ${appData.weights.slice().reverse().slice(0, 7).map(w => `
             <div class="weight-day-card">
               <div class="weight-date">${w.date}</div>
               <div class="weight-row"><div class="weight-label">⚖️ Вес</div><div class="weight-val morning">${w.weight} кг</div></div>
@@ -323,7 +364,7 @@ function renderUI() {
     </div>
   `;
   
-  const last7Days = dates.slice(0,7);
+  const last7Days = dates.slice(0, 7);
   const avgWater = last7Days.reduce((sum, d) => sum + (waterByDay[d] || 0), 0) / (last7Days.length || 1);
   const todayWater = waterByDay[dates[0]] || 0;
   
@@ -334,7 +375,7 @@ function renderUI() {
         <div class="water-card">
           <div class="water-value">${todayWater} мл</div>
           <div class="water-goal">сегодня / ${GOALS.water} мл</div>
-          <div class="bar-track" style="margin-top:8px"><div class="bar-fill water" style="width:${Math.min(100, (todayWater/GOALS.water)*100)}%"></div></div>
+          <div class="bar-track" style="margin-top:8px"><div class="bar-fill water" style="width:${Math.min(100, (todayWater / GOALS.water) * 100)}%"></div></div>
         </div>
         <div class="water-card">
           <div class="water-value">${Math.round(avgWater)} мл</div>
@@ -452,9 +493,9 @@ async function loadAllData() {
   
   try {
     const [foodRows, weightRows, waterRows] = await Promise.all([
-      loadSheetData(SHEET_FOOD),
-      loadSheetData(SHEET_WEIGHT),
-      loadSheetData(SHEET_WATER)
+      loadSheetAsCSV(SHEET_FOOD),
+      loadSheetAsCSV(SHEET_WEIGHT),
+      loadSheetAsCSV(SHEET_WATER)
     ]);
     
     appData.foods = parseFoodData(foodRows);
@@ -468,12 +509,12 @@ async function loadAllData() {
     document.getElementById('app').innerHTML = `
       <div class="empty-state">
         ❌ Ошибка загрузки данных: ${error.message}<br><br>
-        <strong>Проверьте:</strong><br>
-        1. ID таблицы: ${SHEET_ID}<br>
-        2. API ключ: ${API_KEY !== 'ВАШ_API_КЛЮЧ' ? '✅ установлен' : '❌ не установлен'}<br>
-        3. Таблица опубликована (Файл → Поделиться → Доступ для всех)<br>
-        4. Включено API Google Sheets<br>
-        5. Названия листов: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"
+        <strong>Чтобы исправить:</strong><br>
+        1. Откройте таблицу: <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}" target="_blank" style="color:var(--accent)">открыть таблицу</a><br>
+        2. Нажмите <strong>Файл → Поделиться → Доступ для всех с ссылкой</strong><br>
+        3. Убедитесь, что есть листы: "${SHEET_FOOD}", "${SHEET_WEIGHT}", "${SHEET_WATER}"<br><br>
+        <strong>Структура листа "Питание":</strong><br>
+        Дата | Прием | Описание | ккал | белок | углеводы
       </div>
     `;
   }
