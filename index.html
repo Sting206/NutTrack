@@ -15,8 +15,11 @@
     <h1>Дневник<br><span>питания</span></h1>
     <div>
       <div class="goals-header"><strong>Цели в день</strong><br>🔥 2800 ккал &nbsp;|&nbsp; 💪 160г белка &nbsp;|&nbsp; 🌾 350г углеводов &nbsp;|&nbsp; 🥑 80г жиров &nbsp;|&nbsp; 💧 2.5л воды</div>
-      <div class="refresh-status"><span id="lastUpdate">Загрузка...</span> <button onclick="loadAllData()">🔄 Обновить</button></div>
-    </div>
+     <div class="refresh-status">
+  <span id="lastUpdate">Загрузка...</span> 
+  <button onclick="loadAllData()">🔄 Обновить</button>
+  <button onclick="showGoalSettings()" style="background: var(--gradient-gold); color: #000;">⚙️ Цели</button>
+</div>
   </header>
 
   <div class="main-tabs">
