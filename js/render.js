@@ -101,4 +101,66 @@ function renderMeasuresTable() {
     document.getElementById('weight-stats').innerHTML = `
       <div class="weight-stat-card"><div class="weight-stat-value">${currentWeight.toFixed(1)} кг</div><div>текущий вес</div></div>
       <div class="weight-stat-card"><div class="weight-stat-value">${change > 0 ? '+' + change : change} кг</div><div>изменение</div></div>
-      <div class="weight-stat-card"><div class="weight-stat-value">${targetDiff > 0 ? 'осталось ' + target
+      <div class="weight-stat-card"><div class="weight-stat-value">${targetDiff > 0 ? 'осталось ' + targetDiff : 'перебор ' + Math.abs(targetDiff)} кг</div><div>до цели ${GOALS.targetWeight} кг</div></div>
+    `;
+  } else {
+    document.getElementById('weight-stats').innerHTML = '<div class="weight-stat-card">Нет данных о весе</div>';
+  }
+
+  let weightsSorted = [...appData.weights].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
+  if (charts.weight) charts.weight.destroy();
+  let wCtx = document.getElementById('weightChart')?.getContext('2d');
+  if (wCtx && weightsSorted.length) {
+    charts.weight = new Chart(wCtx, {
+      type: 'line', 
+      data: { 
+        labels: weightsSorted.map(w => w.date), 
+        datasets: [
+          { label: 'Вес (кг)', data: weightsSorted.map(w => w.weight), borderColor: '#F1C800', tension: 0.3, fill: false, pointBackgroundColor: '#F1C800', pointRadius: 5 }, 
+          { label: `Цель ${GOALS.targetWeight} кг`, data: Array(weightsSorted.length).fill(GOALS.targetWeight), borderColor: '#F16D00', borderDash: [5, 5], pointRadius: 0 }
+        ] 
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
+    });
+  }
+
+  if (!appData.measures.length) {
+    document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody> <td colspan="10">Нет данных. Добавьте первый замер </tbody>';
+    return;
+  }
+  
+  let sortedAsc = [...appData.measures].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
+  let thead = '<thead> <th>Параметр</th>';
+  sortedAsc.forEach(m => { thead += `<th>${m.date}</th>`; });
+  thead += ' </thead><tbody>';
+  
+  MEASURE_CATEGORIES.forEach(cat => {
+    if (cat.key === 'date') return;
+    thead += ` <td style="text-align:left">${cat.name}, ${cat.unit}  `;
+    sortedAsc.forEach((m, idx) => {
+      let val = m[cat.key];
+      let prev = idx > 0 ? sortedAsc[idx - 1][cat.key] : null;
+      let delta = '';
+      if (prev !== null && val !== 0 && prev !== 0 && val !== prev) {
+        let d = val - prev;
+        delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
+      }
+      let displayVal = val === 0 ? '—' : val.toFixed(1);
+      thead += `<td>${displayVal} ${delta}佛罗`;
+    });
+    thead += `\)`;
+  });
+  thead += '</tbody>';
+  document.getElementById('measures-table').innerHTML = thead;
+}
+
+// Отрисовка полей формы замеров
+function renderMeasureFormFields() {
+  let html = '<div class="form-group"><label>Дата</label><input type="date" id="measure-date"></div>';
+  MEASURE_CATEGORIES.forEach(cat => {
+    if (cat.key === 'date') return;
+    html += `<div class="form-group"><label>${cat.name} (${cat.unit})</label><input type="number" id="measure-${cat.key}" step="0.1"></div>`;
+  });
+  document.getElementById('measure-fields').innerHTML = html;
+  document.getElementById('measure-date').value = new Date().toISOString().split('T')[0];
+}
