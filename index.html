@@ -48,7 +48,18 @@
   </div>
 
   <div id="measures-tab" class="tab-content">
-    <!-- Сначала таблица замеров -->
+    <!-- 1. Сначала статистика веса -->
+    <div class="weight-stats" id="weight-stats"></div>
+    
+    <!-- 2. Затем график динамики веса -->
+    <div class="chart-card">
+      <div class="chart-title">📈 Динамика веса</div>
+      <div class="chart-wrap" style="height:250px">
+        <canvas id="weightChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- 3. Затем таблица замеров -->
     <div class="chart-card">
       <div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div>
       <div class="measures-table-container">
@@ -59,22 +70,11 @@
           <tbody> 
             <td colspan="10">Загрузка... </td>
           </tbody>
-        </table>
+         </table>
       </div>
     </div>
     
-    <!-- Затем график веса -->
-    <div class="chart-card">
-      <div class="chart-title">📈 Динамика веса</div>
-      <div class="chart-wrap" style="height:250px">
-        <canvas id="weightChart"></canvas>
-      </div>
-    </div>
-    
-    <!-- Затем статистика веса -->
-    <div class="weight-stats" id="weight-stats"></div>
-    
-    <!-- И только потом форма добавления замеров -->
+    <!-- 4. В самом низу форма добавления замеров -->
     <div class="add-measure-form">
       <div class="chart-title">➕ Добавить замер (включая вес)</div>
       <div class="form-row-grid" id="measure-fields"></div>
