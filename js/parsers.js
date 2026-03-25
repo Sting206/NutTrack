@@ -62,13 +62,20 @@ function parseWaterData(rows) {
 
 // Парсинг данных замеров
 function parseMeasuresData(rows) {
-  if (rows.length < 2) return [];
+  if (!rows || rows.length < 2) return [];
   let out = [];
+  
   for (let i = 1; i < rows.length; i++) {
     let r = rows[i];
-    if (!r[0] || r[0].trim() === '') continue;
+    // Проверяем, что есть дата и это не пустая строка
+    if (!r[0] || r[0].trim() === '' || r[0] === 'Дата') continue;
+    
+    // Проверяем, что это не заголовок или мусор
+    let dateStr = r[0].trim();
+    if (dateStr.includes('ПЛЕЧИ') || dateStr.includes('БИЦЕТС') || dateStr.includes('ШЕЯ')) continue;
+    
     out.push({
-      date: formatDate(r[0]),
+      date: formatDate(dateStr),
       age: parseNumber(r[1]),
       weight: parseNumber(r[2]),
       calfL: parseNumber(r[3]),
@@ -84,5 +91,16 @@ function parseMeasuresData(rows) {
       neck: parseNumber(r[13])
     });
   }
-  return out.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
+  
+  // Удаляем дубликаты и сортируем
+  let unique = [];
+  let dates = new Set();
+  for (let m of out) {
+    if (!dates.has(m.date)) {
+      dates.add(m.date);
+      unique.push(m);
+    }
+  }
+  
+  return unique.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
 }
