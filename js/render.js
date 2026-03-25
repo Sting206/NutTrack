@@ -93,6 +93,7 @@ function renderDashboardAndHistory() {
 
 // Отрисовка таблицы замеров
 function renderMeasuresTable() {
+  // Статистика веса
   if (appData.weights.length) {
     let currentWeight = appData.weights[appData.weights.length - 1].weight;
     let startWeight = appData.weights[0].weight;
@@ -107,6 +108,7 @@ function renderMeasuresTable() {
     document.getElementById('weight-stats').innerHTML = '<div class="weight-stat-card">Нет данных о весе</div>';
   }
 
+  // График веса
   let weightsSorted = [...appData.weights].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   if (charts.weight) charts.weight.destroy();
   let wCtx = document.getElementById('weightChart')?.getContext('2d');
@@ -124,31 +126,42 @@ function renderMeasuresTable() {
     });
   }
 
-  if (!appData.measures.length) {
+  // Проверка наличия данных замеров
+  if (!appData.measures || !appData.measures.length) {
     document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody> <td colspan="10">Нет данных. Добавьте первый замер </tbody>';
     return;
   }
   
+  // Сортировка от старых к новым
   let sortedAsc = [...appData.measures].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
+  
+  // Создание заголовков таблицы (даты)
   let thead = '<thead> <th>Параметр</th>';
-  sortedAsc.forEach(m => { thead += `<th>${m.date}</th>`; });
+  sortedAsc.forEach(m => { 
+    thead += `<th>${m.date}</th>`; 
+  });
   thead += ' </thead><tbody>';
   
+  // Добавление строк для каждой категории замеров
   MEASURE_CATEGORIES.forEach(cat => {
     if (cat.key === 'date') return;
     thead += ` <td style="text-align:left">${cat.name}, ${cat.unit}  `;
+    
     sortedAsc.forEach((m, idx) => {
       let val = m[cat.key];
       let prev = idx > 0 ? sortedAsc[idx - 1][cat.key] : null;
       let delta = '';
-      if (prev !== null && val !== 0 && prev !== 0 && val !== prev) {
+      
+      // Расчет изменения (только если есть предыдущее значение)
+      if (prev !== null && val !== 0 && prev !== 0 && val !== prev && !isNaN(val) && !isNaN(prev)) {
         let d = val - prev;
         delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
       }
-      let displayVal = val === 0 ? '—' : val.toFixed(1);
-      thead += `<td>${displayVal} ${delta}佛罗`;
+      
+      let displayVal = (val === 0 || isNaN(val)) ? '—' : val.toFixed(1);
+      thead += `<td>${displayVal} ${delta} `;
     });
-    thead += `\)`;
+    thead += ` `;
   });
   thead += '</tbody>';
   document.getElementById('measures-table').innerHTML = thead;
