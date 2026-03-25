@@ -152,7 +152,7 @@ header h1 span {
   transform: scale(1.02);
 }
 
-/* Tabs */
+/* Tabs - FIXED */
 .main-tabs { 
   display: flex; 
   gap: 4px; 
@@ -189,6 +189,15 @@ header h1 span {
   color: var(--accent-a); 
   background: rgba(241, 200, 0, 0.1);
   border-bottom: 2px solid var(--accent-a);
+}
+
+/* Tab content visibility - FIXED */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }
 
 /* Cards */
@@ -782,10 +791,6 @@ header h1 span {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.tab-content {
-  animation: fadeIn 0.4s ease;
-}
-
 /* Footer */
 footer { 
   text-align: center; 
@@ -826,102 +831,6 @@ footer {
     grid-column: span 2;
     justify-content: space-around;
   }
-/* Fix for tabs - ensure they display properly */
-.main-tabs {
-  display: flex !important;
-  gap: 4px;
-  margin-bottom: 32px;
-  border-bottom: 2px solid var(--border);
-  flex-wrap: wrap;
-  background: rgba(10, 15, 26, 0.5);
-  backdrop-filter: blur(8px);
-  border-radius: 16px 16px 0 0;
-  padding: 4px 4px 0 4px;
-}
-
-.main-tab {
-  background: none;
-  border: none;
-  color: var(--muted);
-  padding: 12px 28px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'Unbounded', sans-serif;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  border-radius: 12px 12px 0 0;
-  position: relative;
-  display: inline-block;
-}
-
-.main-tab:hover {
-  color: var(--text);
-  background: rgba(241, 200, 0, 0.05);
-}
-
-.main-tab.active {
-  color: var(--accent-a);
-  background: rgba(241, 200, 0, 0.1);
-  border-bottom: 2px solid var(--accent-a);
-}
-
-/* Ensure tab content visibility - FIXED */
-.tab-content {
-  display: none;
-  animation: fadeIn 0.3s ease;
-}
-
-.tab-content.active {
-  display: block !important;
-}
-
-/* Fix for buttons inside tabs */
-.form-tab,
-.submit-btn,
-.refresh-status button {
-  background: none;
-}
-
-/* Ensure water panel and food panel visibility */
-#food-panel {
-  display: block;
-}
-
-#water-panel {
-  display: none;
-}
-
-/* Fix for form tabs */
-.form-tabs {
-  display: flex !important;
-  gap: 12px !important;
-  margin-bottom: 24px !important;
-  border-bottom: 1px solid var(--border) !important;
-  padding-bottom: 16px !important;
-}
-
-.form-tab {
-  background: none;
-  border: none;
-  color: var(--muted);
-  padding: 10px 24px;
-  cursor: pointer;
-  border-radius: 40px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  display: inline-block;
-}
-
-.form-tab:hover {
-  color: var(--text);
-  background: rgba(241, 200, 0, 0.1);
-}
-
-.form-tab.active {
-  background: var(--gradient-gold);
-  color: #000;
-  box-shadow: var(--shadow-sm);
 }
 </style>
 </head>
