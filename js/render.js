@@ -1,6 +1,5 @@
 // ==================== ОТРИСОВКА UI ====================
 
-// Отрисовка дашборда и истории
 function renderDashboardAndHistory() {
   let dailyAll = aggregateByDay(appData.foods);
   let waterByDay = getWaterByDay(appData.water);
@@ -9,7 +8,6 @@ function renderDashboardAndHistory() {
   let todayData = dailyAll[today] || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
   let todayWater = waterByDay[today] || 0;
   
-  // Осталось на сегодня
   let rem = { 
     kcal: GOALS.kcal - todayData.kcal, 
     protein: GOALS.protein - todayData.protein, 
@@ -25,7 +23,6 @@ function renderDashboardAndHistory() {
   }
   document.getElementById('remaining-items').innerHTML = remHtml;
 
-  // График нутриентов
   let weekLabels = [...lastWeekDates].reverse();
   let kcalData = weekLabels.map(d => lastWeekDaily[d]?.kcal || 0);
   let protData = weekLabels.map(d => lastWeekDaily[d]?.protein || 0);
@@ -57,13 +54,11 @@ function renderDashboardAndHistory() {
     });
   }
 
-  // Водный баланс
   let avgWater = lastWeekDates.reduce((s, d) => s + (waterByDay[d] || 0), 0) / (lastWeekDates.length || 1);
   document.getElementById('water-summary').innerHTML = `
     <div class="water-card"><div class="water-value">${Math.round(todayWater)} мл</div><div>сегодня / ${GOALS.water} мл</div><div class="bar-track"><div class="bar-fill water" style="width:${Math.min(100, todayWater / GOALS.water * 100)}%"></div></div></div>
     <div class="water-card"><div class="water-value">${Math.round(avgWater)} мл</div><div>среднее за 7 дней</div></div>`;
 
-  // Недельные дни
   let weekDaysHtml = '';
   lastWeekDates.forEach((date, i) => {
     let day = lastWeekDaily[date];
@@ -76,7 +71,6 @@ function renderDashboardAndHistory() {
   });
   document.getElementById('week-days').innerHTML = weekDaysHtml || '<div class="empty-state">Нет записей за последнюю неделю</div>';
 
-  // Вся история
   let allDates = Object.keys(dailyAll).sort((a,b) => dateToSortValue(b) - dateToSortValue(a));
   let fullHtml = '';
   allDates.forEach(date => {
@@ -91,7 +85,6 @@ function renderDashboardAndHistory() {
   document.getElementById('lastUpdate').innerHTML = `📅 Обновлено: ${new Date().toLocaleTimeString()}`;
 }
 
-// Отрисовка таблицы замеров
 function renderMeasuresTable() {
   // Статистика веса
   if (appData.weights.length) {
@@ -135,45 +128,77 @@ function renderMeasuresTable() {
   // Сортировка от старых к новым
   let sortedAsc = [...appData.measures].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   
-  // Создание заголовков таблицы (даты)
-  let thead = '<thead> <th>Параметр</th>';
-  sortedAsc.forEach(m => { 
-    thead += `<th>${m.date}</th>`; 
+  // Формирование таблицы
+  let html = '<thead><tr><th>Параметр</th>';
+  sortedAsc.forEach(m => {
+    html += `<th>${m.date}</th>`;
   });
-  thead += ' </thead><tbody>';
+  html += '</tr></thead><tbody>';
   
-  // Добавление строк для каждой категории замеров
-  MEASURE_CATEGORIES.forEach(cat => {
-    if (cat.key === 'date') return;
-    thead += ` <td style="text-align:left">${cat.name}, ${cat.unit}  `;
+  // Список параметров для отображения
+  const measureParams = [
+    { key: 'age', name: 'Возраст', unit: 'лет' },
+    { key: 'weight', name: 'Вес', unit: 'кг' },
+    { key: 'calfL', name: 'Икра Л', unit: 'см' },
+    { key: 'calfR', name: 'Икра П', unit: 'см' },
+    { key: 'thighL', name: 'Бедро Л', unit: 'см' },
+    { key: 'thighR', name: 'Бедро П', unit: 'см' },
+    { key: 'waist', name: 'Талия', unit: 'см' },
+    { key: 'hips', name: 'Бедра', unit: 'см' },
+    { key: 'chest', name: 'Грудь', unit: 'см' },
+    { key: 'shoulders', name: 'Плечи', unit: 'см' },
+    { key: 'bicepL', name: 'Бицепс Л', unit: 'см' },
+    { key: 'bicepR', name: 'Бицепс П', unit: 'см' },
+    { key: 'neck', name: 'Шея', unit: 'см' }
+  ];
+  
+  for (let param of measureParams) {
+    html += `<tr><td style="text-align:left; font-weight:500;">${param.name}, ${param.unit}</td>`;
     
     sortedAsc.forEach((m, idx) => {
-      let val = m[cat.key];
-      let prev = idx > 0 ? sortedAsc[idx - 1][cat.key] : null;
+      let val = m[param.key];
+      let prev = idx > 0 ? sortedAsc[idx - 1][param.key] : null;
       let delta = '';
       
-      // Расчет изменения (только если есть предыдущее значение)
+      // Расчет изменения
       if (prev !== null && val !== 0 && prev !== 0 && val !== prev && !isNaN(val) && !isNaN(prev)) {
         let d = val - prev;
-        delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
+        let arrow = d > 0 ? '▲' : '▼';
+        delta = `<span class="measure-delta ${d > 0 ? 'up' : 'down'}">${arrow}${Math.abs(d).toFixed(1)}</span>`;
       }
       
       let displayVal = (val === 0 || isNaN(val)) ? '—' : val.toFixed(1);
-      thead += `<td>${displayVal} ${delta} `;
+      html += `<td>${displayVal} ${delta}</td>`;
     });
-    thead += ` `;
-  });
-  thead += '</tbody>';
-  document.getElementById('measures-table').innerHTML = thead;
+    html += '</tr>';
+  }
+  
+  html += '</tbody>';
+  document.getElementById('measures-table').innerHTML = html;
 }
 
-// Отрисовка полей формы замеров
 function renderMeasureFormFields() {
   let html = '<div class="form-group"><label>Дата</label><input type="date" id="measure-date"></div>';
-  MEASURE_CATEGORIES.forEach(cat => {
-    if (cat.key === 'date') return;
-    html += `<div class="form-group"><label>${cat.name} (${cat.unit})</label><input type="number" id="measure-${cat.key}" step="0.1"></div>`;
-  });
+  const measureParams = [
+    { key: 'age', name: 'Возраст', unit: 'лет' },
+    { key: 'weight', name: 'Вес', unit: 'кг' },
+    { key: 'calfL', name: 'Икра Л', unit: 'см' },
+    { key: 'calfR', name: 'Икра П', unit: 'см' },
+    { key: 'thighL', name: 'Бедро Л', unit: 'см' },
+    { key: 'thighR', name: 'Бедро П', unit: 'см' },
+    { key: 'waist', name: 'Талия', unit: 'см' },
+    { key: 'hips', name: 'Бедра', unit: 'см' },
+    { key: 'chest', name: 'Грудь', unit: 'см' },
+    { key: 'shoulders', name: 'Плечи', unit: 'см' },
+    { key: 'bicepL', name: 'Бицепс Л', unit: 'см' },
+    { key: 'bicepR', name: 'Бицепс П', unit: 'см' },
+    { key: 'neck', name: 'Шея', unit: 'см' }
+  ];
+  
+  for (let param of measureParams) {
+    html += `<div class="form-group"><label>${param.name} (${param.unit})</label><input type="number" id="measure-${param.key}" step="0.1"></div>`;
+  }
   document.getElementById('measure-fields').innerHTML = html;
-  document.getElementById('measure-date').value = new Date().toISOString().split('T')[0];
+  let measureDate = document.getElementById('measure-date');
+  if (measureDate) measureDate.value = new Date().toISOString().split('T')[0];
 }
