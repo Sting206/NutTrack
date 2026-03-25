@@ -48,10 +48,39 @@
   </div>
 
   <div id="measures-tab" class="tab-content">
+    <!-- Сначала таблица замеров -->
+    <div class="chart-card">
+      <div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div>
+      <div class="measures-table-container">
+        <table class="measures-table" id="measures-table">
+          <thead> 
+            <th>Параметр</th> 
+          </thead>
+          <tbody> 
+            <td colspan="10">Загрузка... </td>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Затем график веса -->
+    <div class="chart-card">
+      <div class="chart-title">📈 Динамика веса</div>
+      <div class="chart-wrap" style="height:250px">
+        <canvas id="weightChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Затем статистика веса -->
     <div class="weight-stats" id="weight-stats"></div>
-    <div class="chart-card"><div class="chart-title">📈 Динамика веса</div><div class="chart-wrap" style="height:250px"><canvas id="weightChart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody> <td colspan="10">Загрузка... </tbody>   </div></div>
-    <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message" class="submit-message"></div></div>
+    
+    <!-- И только потом форма добавления замеров -->
+    <div class="add-measure-form">
+      <div class="chart-title">➕ Добавить замер (включая вес)</div>
+      <div class="form-row-grid" id="measure-fields"></div>
+      <button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button>
+      <div id="measure-message" class="submit-message"></div>
+    </div>
   </div>
 
   <div id="history-tab" class="tab-content"><div id="history-days"></div></div>
