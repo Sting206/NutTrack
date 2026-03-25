@@ -352,22 +352,51 @@ function parseMeasuresData(rows) {
   if (rows.length < 2) return [];
   let out = [];
   
+  // Функция для преобразования числа с запятой (вынесена наружу)
+  function parseNumber(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    if (value === '—' || value === '-' || value === '—') return 0;
+    // Заменяем запятую на точку и парсим
+    let str = String(value).trim().replace(',', '.');
+    let num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  }
+  
+  // Функция для форматирования даты из разных форматов
+  function parseDate(dateStr) {
+    if (!dateStr) return '';
+    
+    let str = String(dateStr).trim();
+    
+    // Если дата в формате YYYY-MM-DD (2025-09-10)
+    if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
+      let parts = str.split('-');
+      return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+    
+    // Если дата в формате DD.MM.YYYY
+    if (str.match(/^\d{2}\.\d{2}\.\d{4}/)) {
+      return str;
+    }
+    
+    // Если дата с временем (DD.MM.YYYY HH:MM:SS)
+    if (str.includes(' ')) {
+      str = str.split(' ')[0];
+      return str;
+    }
+    
+    return str;
+  }
+  
   // Пропускаем заголовок (первая строка)
   for (let i = 1; i < rows.length; i++) {
     let r = rows[i];
     if (!r[0] || r[0].trim() === '') continue;
     
-    // Функция для преобразования числа с запятой
-    function parseNumber(value) {
-      if (!value || value === '—' || value === '-') return 0;
-      // Заменяем запятую на точку и парсим
-      let str = String(value).trim().replace(',', '.');
-      let num = parseFloat(str);
-      return isNaN(num) ? 0 : num;
-    }
+    let date = parseDate(r[0]);
     
     out.push({
-      date: formatDate(r[0]),
+      date: date,
       age: parseNumber(r[1]),
       weight: parseNumber(r[2]),
       calfL: parseNumber(r[3]),
@@ -383,6 +412,10 @@ function parseMeasuresData(rows) {
       neck: parseNumber(r[13])
     });
   }
+  
+  // Сортировка по дате
+  return out.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
+}
 
 function aggregateByDay(foods) {
   let daily = {};
@@ -549,9 +582,17 @@ async function loadAllData() {
       loadSheetAsCSV('Вода').catch(() => []),
       loadSheetAsCSV('Замеры').catch(() => [])
     ]);
+    
+    // ВРЕМЕННО: посмотрим сырые данные замеров
+    console.log('Сырые данные замеров:', measures.slice(0, 3));
+    
     appData.foods = parseFoodData(food);
     appData.water = parseWaterData(water);
     appData.measures = parseMeasuresData(measures);
+    
+    // ВРЕМЕННО: посмотрим распарсенные данные
+    console.log('Распарсенные замеры:', appData.measures);
+    
     appData.weights = appData.measures.filter(m => m.weight > 0).map(m => ({ date: m.date, weight: m.weight }));
     appData.weights.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
     renderDashboardAndHistory();
