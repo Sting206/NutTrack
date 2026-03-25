@@ -7,7 +7,7 @@
 <title>Дневник питания</title>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Onest:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
@@ -15,15 +15,19 @@
     <h1>Дневник<br><span>питания</span></h1>
     <div>
       <div class="goals-header"><strong>Цели в день</strong><br>🔥 2800 ккал &nbsp;|&nbsp; 💪 160г белка &nbsp;|&nbsp; 🌾 350г углеводов &nbsp;|&nbsp; 🥑 80г жиров &nbsp;|&nbsp; 💧 2.5л воды</div>
-      <div class="refresh-status"><span id="lastUpdate">Загрузка...</span> <button onclick="loadAllData()">🔄 Обновить</button></div>
+      <div class="refresh-status">
+        <span id="lastUpdate">Загрузка...</span> 
+        <button onclick="loadAllData()">🔄 Обновить</button>
+        <button onclick="showGoalSettings()" class="goal-btn">⚙️ Цели</button>
+      </div>
     </div>
   </header>
 
   <div class="main-tabs">
-    <button class="main-tab active" onclick="switchMainTab('dashboard')">📊 Дашборд (питание)</button>
-    <button class="main-tab" onclick="switchMainTab('add')">✏️ Добавить</button>
-    <button class="main-tab" onclick="switchMainTab('measures')">📏 Замеры тела + Вес</button>
-    <button class="main-tab" onclick="switchMainTab('history')">📅 Вся история</button>
+    <button class="main-tab active" data-tab="dashboard">📊 Дашборд (питание)</button>
+    <button class="main-tab" data-tab="add">✏️ Добавить</button>
+    <button class="main-tab" data-tab="measures">📏 Замеры тела + Вес</button>
+    <button class="main-tab" data-tab="history">📅 Вся история</button>
   </div>
 
   <div id="dashboard-tab" class="tab-content active">
@@ -37,29 +41,45 @@
 
   <div id="add-tab" class="tab-content">
     <div class="input-form">
-      <div class="form-tabs"><button class="form-tab active" onclick="switchAddTab('food')">🍽️ Еда</button><button class="form-tab" onclick="switchAddTab('water')">💧 Вода</button></div>
-      <div id="food-panel"><div class="form-group"><label>Дата</label><input type="date" id="food-date"></div><div class="form-group"><label>Прием</label><select id="meal-type"><option>завтрак</option><option>обед</option><option>ужин</option><option>доп</option></select></div><div class="form-group"><label>Описание</label><input type="text" id="food-desc" placeholder="блюдо"></div><div class="form-row"><div class="form-group"><label>Ккал</label><input type="number" id="food-kcal" step="0.1"></div><div class="form-group"><label>Белок (г)</label><input type="number" id="food-protein" step="0.1"></div><div class="form-group"><label>Углеводы (г)</label><input type="number" id="food-carbs" step="0.1"></div><div class="form-group"><label>Жиры (г)</label><input type="number" id="food-fat" step="0.1"></div></div><button class="submit-btn" onclick="submitFood()">➕ Добавить</button><div id="food-message" class="submit-message"></div></div>
-      <div id="water-panel" style="display:none"><div class="form-group"><label>Дата</label><input type="date" id="water-date"></div><div class="form-group"><label>Вода (мл)</label><input type="number" id="water-amount" step="1"></div><button class="submit-btn" onclick="submitWater()">💧 Добавить</button><div id="water-message" class="submit-message"></div></div>
+      <div class="form-tabs"><button class="form-tab active" data-add="food">🍽️ Еда</button><button class="form-tab" data-add="water">💧 Вода</button></div>
+      <div id="food-panel"><div class="form-group"><label>Дата</label><input type="date" id="food-date"></div><div class="form-group"><label>Прием</label><select id="meal-type"><option>завтрак</option><option>обед</option><option>ужин</option><option>доп</option></select></div><div class="form-group"><label>Описание</label><input type="text" id="food-desc" placeholder="блюдо"></div><div class="form-row"><div class="form-group"><label>Ккал</label><input type="text" id="food-kcal" inputmode="decimal" placeholder="0"></div><div class="form-group"><label>Белок (г)</label><input type="text" id="food-protein" inputmode="decimal" placeholder="0"></div><div class="form-group"><label>Углеводы (г)</label><input type="text" id="food-carbs" inputmode="decimal" placeholder="0"></div><div class="form-group"><label>Жиры (г)</label><input type="text" id="food-fat" inputmode="decimal" placeholder="0"></div></div><button class="submit-btn" onclick="submitFood()">➕ Добавить</button><div id="food-message" class="submit-message"></div></div>
+      <div id="water-panel" style="display:none"><div class="form-group"><label>Дата</label><input type="date" id="water-date"></div><div class="form-group"><label>Вода (мл)</label><input type="text" id="water-amount" inputmode="decimal" placeholder="0"></div><button class="submit-btn" onclick="submitWater()">💧 Добавить</button><div id="water-message" class="submit-message"></div></div>
     </div>
   </div>
 
   <div id="measures-tab" class="tab-content">
     <div class="weight-stats" id="weight-stats"></div>
     <div class="chart-card"><div class="chart-title">📈 Динамика веса</div><div class="chart-wrap" style="height:250px"><canvas id="weightChart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody>   <td colspan="10">Загрузка...   </tbody>    </div></div>
-    <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message" class="submit-message"></div></div>
+    <div class="chart-card"><div class="chart-title">📊 Таблица замеров (слева старые → справа новые)</div><div class="measures-table-container"><table class="measures-table" id="measures-table"><thead> <th>Параметр</th> </thead><tbody> <td colspan="10">Загрузка... </tbody>   </div></div>
+    <div class="add-measure-form"><div class="chart-title">➕ Добавить замер (включая вес)</div><div class="form-row-grid" id="measure-fields"></div><button class="submit-btn" onclick="submitMeasure()">Сохранить замер</button><div id="measure-message" class="submit-message"></div></div>
   </div>
 
   <div id="history-tab" class="tab-content"><div id="history-days"></div></div>
   <footer>Данные из Google Sheets · Обновление по кнопке</footer>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/parser.js"></script>
-<script src="js/api.js"></script>
-<script src="js/render.js"></script>
-<script src="js/main.js"></script>
+<!-- Модальное окно для настройки целей -->
+<div id="goalModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ Настройка целей</h3>
+      <span class="close" onclick="closeGoalModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>🔥 Дневная норма калорий (ккал)</label><input type="number" id="targetKcal" value="2800"></div>
+      <div class="form-group"><label>💪 Белок (г)</label><input type="number" id="targetProtein" value="160"></div>
+      <div class="form-group"><label>🌾 Углеводы (г)</label><input type="number" id="targetCarbs" value="350"></div>
+      <div class="form-group"><label>🥑 Жиры (г)</label><input type="number" id="targetFat" value="80"></div>
+      <div class="form-group"><label>💧 Вода (мл)</label><input type="number" id="targetWater" value="2500"></div>
+      <div class="form-group"><label>🎯 Целевой вес (кг)</label><input type="number" id="targetWeight" value="82" step="0.1"></div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="saveGoals()" class="submit-btn">💾 Сохранить</button>
+      <button onclick="closeGoalModal()" class="cancel-btn">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
-<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 </html>
