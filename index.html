@@ -351,28 +351,38 @@ function parseWaterData(rows) {
 function parseMeasuresData(rows) {
   if (rows.length < 2) return [];
   let out = [];
+  
+  // Пропускаем заголовок (первая строка)
   for (let i = 1; i < rows.length; i++) {
     let r = rows[i];
-    if (!r[0]) continue;
+    if (!r[0] || r[0].trim() === '') continue;
+    
+    // Функция для преобразования числа с запятой
+    function parseNumber(value) {
+      if (!value || value === '—' || value === '-') return 0;
+      // Заменяем запятую на точку и парсим
+      let str = String(value).trim().replace(',', '.');
+      let num = parseFloat(str);
+      return isNaN(num) ? 0 : num;
+    }
+    
     out.push({
       date: formatDate(r[0]),
-      age: parseFloat(r[1]) || 0,
-      weight: parseFloat(r[2]) || 0,
-      calfL: parseFloat(r[3]) || 0,
-      calfR: parseFloat(r[4]) || 0,
-      thighL: parseFloat(r[5]) || 0,
-      thighR: parseFloat(r[6]) || 0,
-      waist: parseFloat(r[7]) || 0,
-      hips: parseFloat(r[8]) || 0,
-      chest: parseFloat(r[9]) || 0,
-      shoulders: parseFloat(r[10]) || 0,
-      bicepL: parseFloat(r[11]) || 0,
-      bicepR: parseFloat(r[12]) || 0,
-      neck: parseFloat(r[13]) || 0
+      age: parseNumber(r[1]),
+      weight: parseNumber(r[2]),
+      calfL: parseNumber(r[3]),
+      calfR: parseNumber(r[4]),
+      thighL: parseNumber(r[5]),
+      thighR: parseNumber(r[6]),
+      waist: parseNumber(r[7]),
+      hips: parseNumber(r[8]),
+      chest: parseNumber(r[9]),
+      shoulders: parseNumber(r[10]),
+      bicepL: parseNumber(r[11]),
+      bicepR: parseNumber(r[12]),
+      neck: parseNumber(r[13])
     });
   }
-  return out.sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
-}
 
 function aggregateByDay(foods) {
   let daily = {};
