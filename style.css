@@ -646,19 +646,16 @@ header h1 span {
   gap: 16px; 
 }
 
-.submit-btn { 
-  background: var(--gradient-gold);
-  border: none; 
-  border-radius: 14px; 
-  padding: 14px 24px; 
-  color: #000; 
-  font-weight: 700; 
-  cursor: pointer; 
-  width: 100%;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+/* Добавьте это правило */
+.form-row input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.form-row input::-webkit-inner-spin-button,
+.form-row input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .submit-btn:hover {
