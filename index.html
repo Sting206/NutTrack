@@ -826,6 +826,105 @@ footer {
     grid-column: span 2;
     justify-content: space-around;
   }
+}/* Fix for tabs - ensure they display properly */
+.main-tabs {
+  display: flex !important;
+  gap: 4px;
+  margin-bottom: 32px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+  background: rgba(10, 15, 26, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 16px 16px 0 0;
+  padding: 4px 4px 0 4px;
+}
+
+.main-tab {
+  background: none !important;
+  border: none !important;
+  color: var(--muted) !important;
+  padding: 12px 28px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: 'Unbounded', sans-serif !important;
+  white-space: nowrap !important;
+  transition: all 0.2s ease !important;
+  border-radius: 12px 12px 0 0 !important;
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.main-tab:hover {
+  color: var(--text) !important;
+  background: rgba(241, 200, 0, 0.05) !important;
+}
+
+.main-tab.active {
+  color: var(--accent-a) !important;
+  background: rgba(241, 200, 0, 0.1) !important;
+  border-bottom: 2px solid var(--accent-a) !important;
+}
+
+/* Ensure tab content visibility */
+.tab-content {
+  display: none !important;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+  display: block !important;
+}
+
+/* Fix for buttons inside tabs */
+.main-tab,
+.form-tab,
+.submit-btn,
+.refresh-status button {
+  background: none;
+}
+
+/* Ensure water panel and food panel visibility */
+#food-panel,
+#water-panel {
+  display: block;
+}
+
+#water-panel[style*="display: none"],
+#water-panel[style*="display:none"] {
+  display: none !important;
+}
+
+/* Fix for form tabs */
+.form-tabs {
+  display: flex !important;
+  gap: 12px !important;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 16px !important;
+}
+
+.form-tab {
+  background: none !important;
+  border: none !important;
+  color: var(--muted) !important;
+  padding: 10px 24px !important;
+  cursor: pointer !important;
+  border-radius: 40px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-block !important;
+}
+
+.form-tab:hover {
+  color: var(--text) !important;
+  background: rgba(241, 200, 0, 0.1) !important;
+}
+
+.form-tab.active {
+  background: var(--gradient-gold) !important;
+  color: #000 !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 </style>
 </head>
