@@ -1,25 +1,35 @@
 // ==================== РАБОТА С API ====================
 async function loadSheetAsCSV(sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`${sheetName}: ${resp.status}`);
-  return parseCSV(await resp.text());
-}
-
-async function postToSheet(action, data) {
-  try {
-    const formData = new URLSearchParams();
-    formData.append('action', action);
-    for (let [key, val] of Object.entries(data)) {
-      if (val !== undefined && val !== null && val !== '') formData.append(key, val);
-    }
-    const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
-    const result = await response.text();
-    return result === 'OK' || result.includes('success');
-  } catch (e) {
-    console.error('Ошибка отправки:', e);
-    return false;
-  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const callbackName = 'callback_' + Date.now();
+    
+    window[callbackName] = function(data) {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      
+      // Преобразуем JSON в CSV
+      if (data && data.table && data.table.rows) {
+        const rows = data.table.rows.map(row => 
+          row.c.map(cell => cell ? cell.v : '')
+        );
+        resolve(rows);
+      } else {
+        reject(new Error('Неверный формат данных'));
+      }
+    };
+    
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&callback=${callbackName}`;
+    script.src = url;
+    document.body.appendChild(script);
+    
+    setTimeout(() => {
+      if (window[callbackName]) {
+        delete window[callbackName];
+        reject(new Error('Timeout'));
+      }
+    }, 10000);
+  });
 }
 
 function submitFood() {
