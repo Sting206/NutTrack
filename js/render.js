@@ -86,7 +86,6 @@ function renderDashboardAndHistory() {
 }
 
 function renderMeasuresTable() {
-  // Статистика веса
   if (appData.weights.length) {
     let currentWeight = appData.weights[appData.weights.length - 1].weight;
     let startWeight = appData.weights[0].weight;
@@ -101,7 +100,6 @@ function renderMeasuresTable() {
     document.getElementById('weight-stats').innerHTML = '<div class="weight-stat-card">Нет данных о весе</div>';
   }
 
-  // График веса
   let weightsSorted = [...appData.weights].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
   if (charts.weight) charts.weight.destroy();
   let wCtx = document.getElementById('weightChart')?.getContext('2d');
@@ -119,23 +117,18 @@ function renderMeasuresTable() {
     });
   }
 
-  // Проверка наличия данных замеров
   if (!appData.measures || !appData.measures.length) {
     document.getElementById('measures-table').innerHTML = '<thead> <th>Параметр</th> </thead><tbody> <td colspan="10">Нет данных. Добавьте первый замер </tbody>';
     return;
   }
   
-  // Сортировка от старых к новым
   let sortedAsc = [...appData.measures].sort((a, b) => dateToSortValue(a.date) - dateToSortValue(b.date));
-  
-  // Формирование таблицы
-  let html = '<thead><tr><th>Параметр</th>';
+  let html = '<thead> <th>Параметр</th>';
   sortedAsc.forEach(m => {
     html += `<th>${m.date}</th>`;
   });
-  html += '</tr></thead><tbody>';
+  html += ' </thead><tbody>';
   
-  // Список параметров для отображения
   const measureParams = [
     { key: 'age', name: 'Возраст', unit: 'лет' },
     { key: 'weight', name: 'Вес', unit: 'кг' },
@@ -153,14 +146,13 @@ function renderMeasuresTable() {
   ];
   
   for (let param of measureParams) {
-    html += `<tr><td style="text-align:left; font-weight:500;">${param.name}, ${param.unit}</td>`;
+    html += ` <td style="text-align:left; font-weight:500;">${param.name}, ${param.unit} `;
     
     sortedAsc.forEach((m, idx) => {
       let val = m[param.key];
       let prev = idx > 0 ? sortedAsc[idx - 1][param.key] : null;
       let delta = '';
       
-      // Расчет изменения
       if (prev !== null && val !== 0 && prev !== 0 && val !== prev && !isNaN(val) && !isNaN(prev)) {
         let d = val - prev;
         let arrow = d > 0 ? '▲' : '▼';
@@ -168,9 +160,9 @@ function renderMeasuresTable() {
       }
       
       let displayVal = (val === 0 || isNaN(val)) ? '—' : val.toFixed(1);
-      html += `<td>${displayVal} ${delta}</td>`;
+      html += ` <td>${displayVal} ${delta} `;
     });
-    html += '</tr>';
+    html += ` `;
   }
   
   html += '</tbody>';
