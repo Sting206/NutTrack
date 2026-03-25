@@ -422,6 +422,9 @@ function renderMeasureFormFields() {
 }
 
 async function loadAllData() {
+  // Загружаем сохраненные цели из localStorage
+  loadSavedGoals();
+  
   document.getElementById('week-days').innerHTML = '<div class="loading">Загрузка...</div>';
   try {
     let [food, water, measures] = await Promise.all([
@@ -466,6 +469,101 @@ function switchAddTab(type) {
 
 function toggle(id) { let el = document.getElementById(id); if (el) el.classList.toggle('open'); }
 
+// Функция для показа модального окна
+function showGoalSettings() {
+  const modal = document.getElementById('goalModal');
+  if (modal) {
+    // Загружаем текущие цели в поля
+    document.getElementById('targetKcal').value = GOALS.kcal;
+    document.getElementById('targetProtein').value = GOALS.protein;
+    document.getElementById('targetCarbs').value = GOALS.carbs;
+    document.getElementById('targetFat').value = GOALS.fat;
+    document.getElementById('targetWater').value = GOALS.water;
+    document.getElementById('targetWeight').value = GOALS.targetWeight;
+    
+    modal.style.display = 'block';
+  }
+}
+
+// Функция для закрытия модального окна
+function closeGoalModal() {
+  const modal = document.getElementById('goalModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Функция для сохранения целей
+function saveGoals() {
+  // Получаем новые значения
+  const newKcal = parseInt(document.getElementById('targetKcal').value) || 2800;
+  const newProtein = parseInt(document.getElementById('targetProtein').value) || 160;
+  const newCarbs = parseInt(document.getElementById('targetCarbs').value) || 350;
+  const newFat = parseInt(document.getElementById('targetFat').value) || 80;
+  const newWater = parseInt(document.getElementById('targetWater').value) || 2500;
+  const newTargetWeight = parseFloat(document.getElementById('targetWeight').value) || 82;
+  
+  // Обновляем GOALS
+  GOALS.kcal = newKcal;
+  GOALS.protein = newProtein;
+  GOALS.carbs = newCarbs;
+  GOALS.fat = newFat;
+  GOALS.water = newWater;
+  GOALS.targetWeight = newTargetWeight;
+  
+  // Сохраняем в localStorage, чтобы цели сохранялись после перезагрузки
+  localStorage.setItem('userGoals', JSON.stringify(GOALS));
+  
+  // Обновляем отображение целей в хедере
+  updateGoalsDisplay();
+  
+  // Перерисовываем все данные с новыми целями
+  renderDashboardAndHistory();
+  renderMeasuresTable();
+  
+  // Закрываем модальное окно
+  closeGoalModal();
+  
+  // Показываем сообщение об успехе
+  showMessage('food-message', '✅ Цели успешно обновлены!', 'success');
+}
+
+// Функция для обновления отображения целей в хедере
+function updateGoalsDisplay() {
+  const goalsHeader = document.querySelector('.goals-header');
+  if (goalsHeader) {
+    goalsHeader.innerHTML = `
+      <strong>Цели в день</strong><br>
+      🔥 ${GOALS.kcal} ккал &nbsp;|&nbsp; 💪 ${GOALS.protein}г белка &nbsp;|&nbsp; 
+      🌾 ${GOALS.carbs}г углеводов &nbsp;|&nbsp; 🥑 ${GOALS.fat}г жиров &nbsp;|&nbsp; 
+      💧 ${GOALS.water/1000}л воды
+    `;
+  }
+}
+
+// Загрузка сохраненных целей при старте
+function loadSavedGoals() {
+  const savedGoals = localStorage.getItem('userGoals');
+  if (savedGoals) {
+    const parsed = JSON.parse(savedGoals);
+    GOALS.kcal = parsed.kcal || 2800;
+    GOALS.protein = parsed.protein || 160;
+    GOALS.carbs = parsed.carbs || 350;
+    GOALS.fat = parsed.fat || 80;
+    GOALS.water = parsed.water || 2500;
+    GOALS.targetWeight = parsed.targetWeight || 82;
+    updateGoalsDisplay();
+  }
+}
+
+// Закрытие модального окна при клике вне его
+window.onclick = function(event) {
+  const modal = document.getElementById('goalModal');
+  if (event.target === modal) {
+    closeGoalModal();
+  }
+}
+  
 function setDefaultDates() {
   let today = new Date().toISOString().split('T')[0];
   ['food-date', 'water-date'].forEach(id => { let el = document.getElementById(id); if (el) el.value = today; });
@@ -475,5 +573,44 @@ setDefaultDates();
 renderMeasureFormFields();
 loadAllData();
 </script>
+<!-- Модальное окно для настройки целей -->
+<div id="goalModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ Настройка целей</h3>
+      <span class="close" onclick="closeGoalModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>🔥 Дневная норма калорий (ккал)</label>
+        <input type="number" id="targetKcal" placeholder="2800" value="2800">
+      </div>
+      <div class="form-group">
+        <label>💪 Белок (г)</label>
+        <input type="number" id="targetProtein" placeholder="160" value="160">
+      </div>
+      <div class="form-group">
+        <label>🌾 Углеводы (г)</label>
+        <input type="number" id="targetCarbs" placeholder="350" value="350">
+      </div>
+      <div class="form-group">
+        <label>🥑 Жиры (г)</label>
+        <input type="number" id="targetFat" placeholder="80" value="80">
+      </div>
+      <div class="form-group">
+        <label>💧 Вода (мл)</label>
+        <input type="number" id="targetWater" placeholder="2500" value="2500">
+      </div>
+      <div class="form-group">
+        <label>🎯 Целевой вес (кг)</label>
+        <input type="number" id="targetWeight" placeholder="82" value="82">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="saveGoals()" class="submit-btn">💾 Сохранить</button>
+      <button onclick="closeGoalModal()" class="cancel-btn">Отмена</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
