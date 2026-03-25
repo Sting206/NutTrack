@@ -931,4 +931,28 @@ footer {
   .cancel-btn, .modal-footer .submit-btn {
     width: 100%;
   }
+/* Убираем стрелки у полей ввода */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Для текстовых полей с числами */
+input[type="text"][inputmode="decimal"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="text"][inputmode="decimal"]::-webkit-inner-spin-button,
+input[type="text"][inputmode="decimal"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 }
